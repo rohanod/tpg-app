@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geneva Bus Tracker</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.3/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+</head>
+<body>
+<div class="container">
+<h1>Geneva Bus Tracker</h1>
+<form id="bus-form">
+<div class="input-group">
+<label for="stop-name">Bus Stop Name:</label>
+<input type="text" id="stop-name" name="stop-name" placeholder="Enter stop name" required>
+</div>
+
+<div class="input-group">
+<label for="bus-number">Bus Number (optional):</label>
+<input type="number" id="bus-number" name="bus-number" placeholder="Enter bus number">
+</div>
+
+<button type="button" id="fetch-bus-timings" class="btn">Show Bus Timings</button>
+</form>
+
+<div class="current-time-box">
+<div id="current-time">
+<span id="current-time-seconds"></span>
+</div>
+</div>
+
+<div id="bus-info"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
