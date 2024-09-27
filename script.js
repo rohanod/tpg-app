@@ -57,13 +57,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
             Object.keys(buses).forEach(busLine => {
                 const busDetails = buses[busLine];
+
                 const busInfo = `
                     <div class="bus-info-item">
-                        <div class="bus-line">Bus ${busLine}</div>
-                        <div class="destination">to ${busDetails.destination}</div>
-                        <div class="timings">${busDetails.timings.join(' min, ')} min</div>
+                        <div class="bus-line" data-bus="${busLine}">
+                            <span>Bus ${busLine}</span>
+                            <span>→ ${busDetails.destination}</span>
+                        </div>
+                        <div class="timings" id="timings-${busLine}">
+                            <span>${busDetails.timings.join(' min, ')} min</span>
+                        </div>
                     </div>`;
                 busInfoContainer.innerHTML += busInfo;
+            });
+
+            // Add click event listener to each bus-line element for collapse/expand functionality
+            document.querySelectorAll('.bus-line').forEach(busLineElement => {
+                busLineElement.addEventListener('click', function () {
+                    const busLine = this.dataset.bus;
+                    const timingsElement = document.getElementById(`timings-${busLine}`);
+                    timingsElement.classList.toggle('active');
+                });
             });
 
         } catch (error) {

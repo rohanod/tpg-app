@@ -79,14 +79,12 @@ button.btn:hover {
 
 #bus-info {
     margin-top: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
-    grid-gap: 15px;  /* Space between grid items */
 }
 
 .bus-info-item {
     background-color: #FFFFFF;
     padding: 15px;
+    margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     color: #FF6600;  /* TPG Orange */
@@ -96,13 +94,33 @@ button.btn:hover {
 .bus-line {
     font-weight: bold;
     color: #FF6600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    transition: background-color 0.3s ease;
 }
 
-.destination {
-    color: #333;
-    font-weight: 600;
+.bus-line:hover {
+    background-color: #f9f9f9;
 }
 
 .timings {
-    color: #333;
+    display: none;
+    padding: 10px;
+    border-top: 1px solid #eee;
+}
+
+.timings.active {
+    display: block;
+}
+
+#current-time {
+    color: #FFFFFF;
+    font-size: 1rem;
+    margin-bottom: 15px;
 }
