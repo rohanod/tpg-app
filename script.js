@@ -9,6 +9,25 @@ document.addEventListener('DOMContentLoaded', function () {
         currentTimeDisplay.textContent = now.toLocaleTimeString();
     }
 
+    async function fetchStationId(stopName) {
+        const url = `${apiUrl}/locations?query=${stopName}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.stations && data.stations.length > 0) {
+            return data.stations[0].id;
+        } else {
+            busInfoContainer.innerHTML = "No station found.";
+            throw new Error("No station found");
+        }
+    }
+
+    async function fetchStationBoard(stationId) {
+        const url = `${apiUrl}/stationboard?id=${stationId}&limit=5&transportations[]=bus`;
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.stationboard;
+    }
+
     async function fetchAndDisplayBusInfo() {
         const stopName = document.getElementById('stop-name').value.trim();
 
@@ -17,24 +36,14 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const url = `${apiUrl}/stationboard?station=${stopName}&limit=5&transportations[]=bus`;
-
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch data.');
-            const data = await response.json();
-            processBusData(data);
-        } catch (error) {
-            busInfoContainer.innerHTML = "Error fetching data. Please try again.";
-        }
-    }
+            const stationId = await fetchStationId(stopName);
+            const stationBoard = await fetchStationBoard(stationId);
 
-    function processBusData(data) {
-        busInfoContainer.innerHTML = '';
-        const buses = {};
+            busInfoContainer.innerHTML = '';
+            const buses = {};
 
-        if (data.stationboard) {
-            data.stationboard.forEach(bus => {
+            stationBoard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
                 const busLine = bus.number;
                 const destination = bus.to;
@@ -48,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 const busInfo = `<div class="bus-info-item">Bus ${busLine} to ${busDetails.destination}: ${busDetails.timings.join(' min, ')} min</div>`;
                 busInfoContainer.innerHTML += busInfo;
             });
+
+        } catch (error) {
+            busInfoContainer.innerHTML = "Error fetching bus timings.";
         }
     }
 
