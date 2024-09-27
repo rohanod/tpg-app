@@ -79,14 +79,14 @@ button.btn:hover {
 
 #bus-info {
     margin-top: 20px;
-    font-size: 1.2rem;
-    color: #333;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid */
+    grid-gap: 15px;  /* Space between grid items */
 }
 
 .bus-info-item {
     background-color: #FFFFFF;
     padding: 15px;
-    margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     color: #FF6600;  /* TPG Orange */
