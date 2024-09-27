@@ -2,7 +2,7 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #FFFFFF; /* White background */
+    background-color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -12,7 +12,7 @@ body {
 
 .container {
     text-align: center;
-    background-color: #E04E39; /* TPG Orange */
+    background-color: #E04E39;
     border-radius: 15px;
     padding: 40px;
     box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
@@ -21,7 +21,7 @@ body {
 }
 
 h1 {
-    color: #FFFFFF;  /* White text */
+    color: #FFFFFF;
     font-size: 2.5rem;
     margin-bottom: 20px;
     text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
@@ -35,7 +35,7 @@ h1 {
 label {
     display: block;
     font-size: 1rem;
-    color: #FFFFFF;  /* White text for labels */
+    color: #FFFFFF;
     margin-bottom: 8px;
 }
 
@@ -45,8 +45,8 @@ input[type="text"] {
     border-radius: 8px;
     border: none;
     outline: none;
-    background-color: #FFFFFF;  /* White input field */
-    color: #E04E39;  /* Orange text */
+    background-color: #FFFFFF;
+    color: #E04E39;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     font-size: 1rem;
     transition: all 0.3s ease;
@@ -57,9 +57,9 @@ input[type="text"]:focus {
 }
 
 button.btn {
-    background-color: #FFFFFF;  /* White button */
-    color: #E04E39;  /* Orange text */
-    border: 2px solid #E04E39;  /* Orange border */
+    background-color: #FFFFFF;
+    color: #E04E39;
+    border: 2px solid #E04E39;
     padding: 12px 20px;
     font-size: 1rem;
     font-weight: bold;
@@ -71,8 +71,8 @@ button.btn {
 }
 
 button.btn:hover {
-    background-color: #E04E39;  /* Orange hover */
-    color: #FFFFFF;  /* White text on hover */
+    background-color: #E04E39;
+    color: #FFFFFF;
     transform: translateY(-3px);
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
 }
@@ -80,14 +80,14 @@ button.btn:hover {
 #bus-info {
     margin-top: 20px;
     font-size: 1.2rem;
-    color: #333; /* Dark grey text for info */
+    color: #333;
 }
 
 .bus-info-item {
-    background-color: #FFFFFF;  /* White background for bus info */
+    background-color: #FFFFFF;
     padding: 15px;
     margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    color: #E04E39;  /* Orange text for bus info */
+    color: #E04E39;
 }

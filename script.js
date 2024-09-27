@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const busInfoContainer = document.getElementById('bus-info');
     const currentTimeDisplay = document.getElementById('current-time');
     const fetchBusTimingsButton = document.getElementById('fetch-bus-timings');
-    const stopNameInput = document.getElementById('stop-name'); // Ensure this element is found
+    const stopNameInput = document.getElementById('stop-name');
 
     function updateCurrentTime() {
         const now = new Date();
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchAndDisplayBusInfo() {
-        const stopName = stopNameInput.value.trim(); // Correct reference to the input field
+        const stopName = stopNameInput.value.trim();
 
         if (!stopName) {
             busInfoContainer.innerHTML = "Please enter a bus stop name.";
