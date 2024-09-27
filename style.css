@@ -12,7 +12,7 @@ body {
 
 .container {
     text-align: center;
-    background-color: #E04E39;
+    background-color: #FF6600; /* TPG Orange */
     border-radius: 15px;
     padding: 40px;
     box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
@@ -46,7 +46,7 @@ input[type="text"] {
     border: none;
     outline: none;
     background-color: #FFFFFF;
-    color: #E04E39;
+    color: #FF6600; /* TPG Orange */
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     font-size: 1rem;
     transition: all 0.3s ease;
@@ -58,8 +58,8 @@ input[type="text"]:focus {
 
 button.btn {
     background-color: #FFFFFF;
-    color: #E04E39;
-    border: 2px solid #E04E39;
+    color: #FF6600;  /* TPG Orange */
+    border: 2px solid #FF6600;
     padding: 12px 20px;
     font-size: 1rem;
     font-weight: bold;
@@ -71,7 +71,7 @@ button.btn {
 }
 
 button.btn:hover {
-    background-color: #E04E39;
+    background-color: #FF6600;
     color: #FFFFFF;
     transform: translateY(-3px);
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
@@ -89,5 +89,20 @@ button.btn:hover {
     margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    color: #E04E39;
+    color: #FF6600;  /* TPG Orange */
+    text-align: left;
+}
+
+.bus-line {
+    font-weight: bold;
+    color: #FF6600;
+}
+
+.destination {
+    color: #333;
+    font-weight: 600;
+}
+
+.timings {
+    color: #333;
 }

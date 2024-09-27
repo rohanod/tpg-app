@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchStationBoard(stationId) {
-        const url = `${apiUrl}/stationboard?id=${stationId}&limit=5&transportations[]=bus`;
+        const url = `${apiUrl}/stationboard?id=${stationId}&limit=100&transportations[]=bus`;
         const response = await fetch(url);
         const data = await response.json();
         return data.stationboard;
@@ -46,16 +46,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
             stationBoard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
-                const busLine = bus.number;
-                const destination = bus.to;
+                if (minutesAway >= 0) { // Exclude negative timings
+                    const busLine = bus.number;
+                    const destination = bus.to;
 
-                if (!buses[busLine]) buses[busLine] = { destination: destination, timings: [] };
-                buses[busLine].timings.push(minutesAway);
+                    if (!buses[busLine]) buses[busLine] = { destination: destination, timings: [] };
+                    if (buses[busLine].timings.length < 5) buses[busLine].timings.push(minutesAway);
+                }
             });
 
             Object.keys(buses).forEach(busLine => {
                 const busDetails = buses[busLine];
-                const busInfo = `<div class="bus-info-item">Bus ${busLine} to ${busDetails.destination}: ${busDetails.timings.join(' min, ')} min</div>`;
+                const busInfo = `
+                    <div class="bus-info-item">
+                        <div class="bus-line">Bus ${busLine}</div>
+                        <div class="destination">to ${busDetails.destination}</div>
+                        <div class="timings">${busDetails.timings.join(' min, ')} min</div>
+                    </div>`;
                 busInfoContainer.innerHTML += busInfo;
             });
 
@@ -65,6 +72,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
+
+    // Prevent form submission on Enter key press
+    document.getElementById('bus-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+    });
 
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
