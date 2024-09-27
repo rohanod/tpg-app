@@ -46,36 +46,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
             stationBoard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
-                if (minutesAway >= 0) { // Exclude negative timings
+                if (minutesAway >= 0) {
                     const busLine = bus.number;
                     const destination = bus.to;
 
-                    if (!buses[busLine]) buses[busLine] = { destination: destination, timings: [] };
-                    if (buses[busLine].timings.length < 5) buses[busLine].timings.push(minutesAway);
+                    const busKey = `${busLine}-${destination}`;
+                    if (!buses[busKey]) buses[busKey] = { destination: destination, timings: [] };
+                    if (buses[busKey].timings.length < 5) buses[busKey].timings.push(minutesAway);
                 }
             });
 
-            Object.keys(buses).forEach(busLine => {
-                const busDetails = buses[busLine];
+            Object.keys(buses).forEach(busKey => {
+                const busDetails = buses[busKey];
+                const [busLine] = busKey.split('-');
 
                 const busInfo = `
                     <div class="bus-info-item">
-                        <div class="bus-line" data-bus="${busLine}">
+                        <div class="bus-line" data-bus="${busKey}">
                             <span>Bus ${busLine}</span>
                             <span>→ ${busDetails.destination}</span>
                         </div>
-                        <div class="timings" id="timings-${busLine}">
-                            <span>${busDetails.timings.join(' min, ')} min</span>
+                        <div class="timings" id="timings-${busKey}">
+                            ${busDetails.timings.map(t => `<div class="timing">${t} min</div>`).join('')}
                         </div>
                     </div>`;
                 busInfoContainer.innerHTML += busInfo;
             });
 
-            // Add click event listener to each bus-line element for collapse/expand functionality
             document.querySelectorAll('.bus-line').forEach(busLineElement => {
                 busLineElement.addEventListener('click', function () {
-                    const busLine = this.dataset.bus;
-                    const timingsElement = document.getElementById(`timings-${busLine}`);
+                    const busKey = this.dataset.bus;
+                    const timingsElement = document.getElementById(`timings-${busKey}`);
                     timingsElement.classList.toggle('active');
                 });
             });
@@ -87,9 +88,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
 
-    // Prevent form submission on Enter key press
     document.getElementById('bus-form').addEventListener('submit', function (event) {
         event.preventDefault();
+        fetchAndDisplayBusInfo();
     });
 
     updateCurrentTime();
