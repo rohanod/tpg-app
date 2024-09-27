@@ -27,27 +27,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) throw new Error('Failed to fetch data.');
             const data = await response.json();
             processBusData(data, busNumber);
         } catch (error) {
-            console.error("Error fetching data:", error);
-            busInfoContainer.innerHTML = "An error occurred while fetching bus information.";
+            busInfoContainer.innerHTML = "Error fetching data. Please try again.";
         }
     }
 
     function processBusData(data, busNumber) {
         busInfoContainer.innerHTML = '';
-        if (data.connections) {
-            data.connections.forEach(connection => {
-                const busLine = connection.sections[0].journey.number;
-                const minutesAway = Math.round((new Date(connection.from.departure) - new Date()) / 60000);
-                busInfoContainer.innerHTML += `<div>Bus ${busLine}: ${minutesAway} min</div>`;
-            });
-        } else if (data.stationboard) {
+        const buses = {};
+
+        if (data.stationboard) {
             data.stationboard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
-                busInfoContainer.innerHTML += `<div>Bus ${bus.number}: ${minutesAway} min</div>`;
+                const busLine = bus.number;
+                const destination = bus.to;
+
+                if (!buses[busLine]) buses[busLine] = { destination: destination, timings: [] };
+                buses[busLine].timings.push(minutesAway);
+            });
+
+            Object.keys(buses).forEach(busLine => {
+                const busDetails = buses[busLine];
+                const busInfo = `<div class="bus-info-item">Bus ${busLine} to ${busDetails.destination}: ${busDetails.timings.join(' min, ')} min</div>`;
+                busInfoContainer.innerHTML += busInfo;
             });
         }
     }
