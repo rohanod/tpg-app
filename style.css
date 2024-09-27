@@ -39,7 +39,7 @@ label {
     margin-bottom: 8px;
 }
 
-input[type="text"], input[type="number"] {
+input[type="text"] {
     width: 100%;
     padding: 10px;
     border-radius: 8px;
@@ -50,7 +50,7 @@ input[type="text"], input[type="number"] {
     transition: all 0.3s ease;
 }
 
-input[type="text"]:focus, input[type="number"]:focus {
+input[type="text"]:focus {
     box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2);
 }
 

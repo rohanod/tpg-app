@@ -11,31 +11,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchAndDisplayBusInfo() {
         const stopName = document.getElementById('stop-name').value.trim();
-        const busNumber = document.getElementById('bus-number').value.trim();
 
         if (!stopName) {
             busInfoContainer.innerHTML = "Please enter a bus stop name.";
             return;
         }
 
-        let url;
-        if (busNumber) {
-            url = `${apiUrl}/connections?from=${stopName}&limit=5&transportations[]=bus`;
-        } else {
-            url = `${apiUrl}/stationboard?station=${stopName}&limit=5&transportations[]=bus`;
-        }
+        const url = `${apiUrl}/stationboard?station=${stopName}&limit=5&transportations[]=bus`;
 
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch data.');
             const data = await response.json();
-            processBusData(data, busNumber);
+            processBusData(data);
         } catch (error) {
             busInfoContainer.innerHTML = "Error fetching data. Please try again.";
         }
     }
 
-    function processBusData(data, busNumber) {
+    function processBusData(data) {
         busInfoContainer.innerHTML = '';
         const buses = {};
 
