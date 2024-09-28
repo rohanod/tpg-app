@@ -38,19 +38,18 @@ function showModal(bus) {
 
     const now = new Date();
     
-    // Get and sort passList times in ascending order
     const sortedTimes = bus.passList
         .map(stop => {
             const departureTime = new Date(stop.departure);
-            const timeDiffInMinutes = Math.floor((departureTime - now) / 60000); // Calculate difference in minutes
+            const timeDiffInMinutes = Math.floor((departureTime - now) / 60000);
             return {
-                stationName: stop.station.name,
+                stationName: stop.station.name ? stop.station.name : 'Unknown stop',
                 departureTime: timeDiffInMinutes
             };
         })
-        .filter(stop => stop.departureTime >= 0) // Only show times in the future
-        .sort((a, b) => a.departureTime - b.departureTime) // Sort by smallest time
-        .slice(0, 5); // Limit to 5 times
+        .filter(stop => stop.departureTime >= 0)
+        .sort((a, b) => a.departureTime - b.departureTime)
+        .slice(0, 5);
 
     modalBody.innerHTML = `
         <h2>Bus ${bus.number} → ${bus.to}</h2>
