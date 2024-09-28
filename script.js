@@ -41,13 +41,16 @@ function showModal(bus) {
     const sortedTimes = bus.passList
         .map(stop => {
             const departureTime = new Date(stop.departure);
-            const timeDiffInMinutes = Math.floor((departureTime - now) / 60000);
-            return {
-                stationName: stop.station.name ? stop.station.name : 'Unknown stop',
-                departureTime: timeDiffInMinutes
-            };
+            if (!isNaN(departureTime.getTime())) {
+                const timeDiffInMinutes = Math.floor((departureTime - now) / 60000);
+                return {
+                    stationName: stop.station.name ? stop.station.name : 'Unknown stop',
+                    departureTime: timeDiffInMinutes
+                };
+            }
+            return null;
         })
-        .filter(stop => stop.departureTime >= 0)
+        .filter(stop => stop !== null && stop.departureTime >= 0)
         .sort((a, b) => a.departureTime - b.departureTime)
         .slice(0, 5);
 
