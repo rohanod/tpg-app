@@ -6,7 +6,7 @@ document.getElementById('bus-form').addEventListener('submit', function (e) {
 document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
 
 function fetchAndDisplayBusInfo() {
-    const stopName = document.getElementById('stop-name').value;
+    const stopName = document.getElementById('stop-name').value.trim();
     if (!stopName) return;
 
     fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`)
@@ -24,30 +24,43 @@ function fetchAndDisplayBusInfo() {
             const busInfoContainer = document.getElementById('bus-info');
             busInfoContainer.innerHTML = '';
 
-            data.stationboard.forEach((bus) => {
-                if (bus.stop.station.name.toLowerCase() === stopName.toLowerCase()) {
-                    const busItem = document.createElement('div');
-                    busItem.classList.add('bus-info-item');
-                    busItem.innerHTML = `
-                        <div class="bus-line">Bus ${bus.number} From ${bus.stop.station.name} → ${bus.to}</div>
-                        <div class="departure-time">Departure: ${new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString()}</div>
-                    `;
-                    busItem.addEventListener('click', () => showModal(bus));
-                    busInfoContainer.appendChild(busItem);
-                }
+            const filteredBuses = data.stationboard.filter(bus => {
+                return bus.passList.some(pass => pass.station.name.toLowerCase() === stopName.toLowerCase());
+            });
+
+            if (filteredBuses.length === 0) {
+                busInfoContainer.innerHTML = `<p>No buses departing from ${stopName} were found.</p>`;
+                return;
+            }
+
+            filteredBuses.forEach(bus => {
+                const relevantStop = bus.passList.find(pass => pass.station.name.toLowerCase() === stopName.toLowerCase());
+                const busItem = document.createElement('div');
+                busItem.classList.add('bus-info-item');
+                busItem.innerHTML = `
+                    <div class="bus-line">Bus ${bus.number} From ${stopName} → ${bus.to}</div>
+                    <div class="departure-time">Departure: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</div>
+                `;
+                busItem.addEventListener('click', () => showModal(bus, relevantStop));
+                busInfoContainer.appendChild(busItem);
             });
         });
 }
 
-function showModal(bus) {
+function showModal(bus, relevantStop) {
     const modal = document.getElementById('popup-modal');
     const modalBody = document.getElementById('modal-body');
-    
+
+    const subsequentStops = bus.passList.slice(
+        bus.passList.indexOf(relevantStop) + 1,
+        bus.passList.indexOf(relevantStop) + 6
+    );
+
     modalBody.innerHTML = `
         <h2>Bus ${bus.number} → ${bus.to}</h2>
-        <p>Departure: ${new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString()}</p>
+        <p>Departure from ${relevantStop.station.name}: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</p>
         <ul>
-            ${bus.passList.slice(0, 5).map(pass => `
+            ${subsequentStops.map(pass => `
                 <li>${pass.station.name}: ${new Date(pass.departureTimestamp * 1000).toLocaleTimeString()}</li>
             `).join('')}
         </ul>
