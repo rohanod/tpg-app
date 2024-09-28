@@ -35,11 +35,27 @@ function fetchAndDisplayBusInfo() {
 function showModal(bus) {
     const modal = document.getElementById('popup-modal');
     const modalBody = document.getElementById('modal-body');
+
+    const now = new Date();
+    
+    // Get and sort passList times in ascending order
+    const sortedTimes = bus.passList
+        .map(stop => {
+            const departureTime = new Date(stop.departure);
+            const timeDiffInMinutes = Math.floor((departureTime - now) / 60000); // Calculate difference in minutes
+            return {
+                stationName: stop.station.name,
+                departureTime: timeDiffInMinutes
+            };
+        })
+        .filter(stop => stop.departureTime >= 0) // Only show times in the future
+        .sort((a, b) => a.departureTime - b.departureTime) // Sort by smallest time
+        .slice(0, 5); // Limit to 5 times
+
     modalBody.innerHTML = `
         <h2>Bus ${bus.number} → ${bus.to}</h2>
-        <p>Departure: ${bus.stop.departure}</p>
         <ul>
-            ${bus.passList.slice(0, 5).map(stop => `<li>${stop.station.name}: ${stop.departure}</li>`).join('')}
+            ${sortedTimes.map(stop => `<li>${stop.stationName}: in ${stop.departureTime} minutes</li>`).join('')}
         </ul>
     `;
     modal.style.display = 'flex';
