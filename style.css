@@ -84,6 +84,7 @@ button:active {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
+    justify-items: stretch;
 }
 
 .bus-info-item {
@@ -93,6 +94,8 @@ button:active {
     padding: 10px;
     text-align: left;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .bus-line {
@@ -108,6 +111,7 @@ button:active {
 .timings {
     display: none;
     padding-top: 10px;
+    flex-grow: 1;
 }
 
 .timings.active {
