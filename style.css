@@ -4,10 +4,11 @@ body {
     font-family: 'Poppins', sans-serif;
     background-color: #FFFFFF;
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Align the container at the top for better scrolling */
     justify-content: center;
     height: 100vh;
     margin: 0;
+    overflow-y: scroll; /* Allow scrolling on mobile devices */
 }
 
 .container {
@@ -16,8 +17,9 @@ body {
     border-radius: 15px;
     padding: 40px;
     box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
+    max-width: 800px;
     width: 100%;
+    margin-bottom: 20px; /* Extra margin to avoid clipping on mobile */
 }
 
 h1 {
@@ -39,7 +41,8 @@ label {
     margin-bottom: 8px;
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"] {
     width: 100%;
     padding: 10px;
     border-radius: 8px;
@@ -52,7 +55,8 @@ input[type="text"] {
     transition: all 0.3s ease;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="number"]:focus {
     box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2);
 }
 
@@ -79,12 +83,14 @@ button.btn:hover {
 
 #bus-info {
     margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
 }
 
 .bus-info-item {
     background-color: #FFFFFF;
     padding: 15px;
-    margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     color: #FF6600;
@@ -132,4 +138,29 @@ button.btn:hover {
     color: #FFFFFF;
     font-size: 1rem;
     margin-bottom: 15px;
+}
+
+/* Make sure the app is mobile-friendly with padding and spacing */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    button.btn {
+        padding: 10px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    .bus-info-item {
+        padding: 10px;
+    }
 }

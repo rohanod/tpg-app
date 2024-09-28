@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentTimeDisplay = document.getElementById('current-time');
     const fetchBusTimingsButton = document.getElementById('fetch-bus-timings');
     const stopNameInput = document.getElementById('stop-name');
+    const busNumberInput = document.getElementById('bus-number');
     const busForm = document.getElementById('bus-form');
 
     function updateCurrentTime() {
@@ -23,8 +24,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function fetchStationBoard(stationId) {
-        const url = `${apiUrl}/stationboard?id=${stationId}&limit=100&transportations[]=bus`;
+    async function fetchStationBoard(stationId, busNumber) {
+        let url = `${apiUrl}/stationboard?id=${stationId}&limit=100&transportations[]=bus`;
         const response = await fetch(url);
         const data = await response.json();
         return data.stationboard;
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchAndDisplayBusInfo() {
         const stopName = stopNameInput.value.trim();
+        const busNumber = busNumberInput.value.trim();
 
         if (!stopName) {
             busInfoContainer.innerHTML = "Please enter a bus stop name.";
@@ -40,11 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const stationId = await fetchStationId(stopName);
-            const stationBoard = await fetchStationBoard(stationId);
+            const stationBoard = await fetchStationBoard(stationId, busNumber);
 
             busInfoContainer.innerHTML = '';
             const buses = {};
 
+            // Process stationboard, and group by bus line and destination
             stationBoard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
                 if (minutesAway >= 0) {
@@ -52,48 +55,66 @@ document.addEventListener('DOMContentLoaded', function () {
                     const destination = bus.to;
 
                     const busKey = `${busLine}-${destination}`;
-                    if (!buses[busKey]) buses[busKey] = { destination: destination, timings: [] };
-                    if (buses[busKey].timings.length < 5) buses[busKey].timings.push(minutesAway);
+                    if (!buses[busKey]) {
+                        buses[busKey] = { destination: destination, timings: [] };
+                    }
+                    if (buses[busKey].timings.length < 5) {
+                        buses[busKey].timings.push(`${minutesAway} min`);
+                    }
                 }
             });
 
+            // Display the buses in a collapsible format
             Object.keys(buses).forEach(busKey => {
-                const busDetails = buses[busKey];
-                const [busLine] = busKey.split('-');
+                const busInfo = buses[busKey];
+                const busLine = busKey.split('-')[0];
+                const destination = busInfo.destination;
+                const timings = busInfo.timings;
 
-                const busInfo = `
-                    <div class="bus-info-item">
-                        <div class="bus-line" data-bus="${busKey}">
-                            <span>Bus ${busLine}</span>
-                            <span>→ ${busDetails.destination}</span>
-                        </div>
-                        <div class="timings" id="timings-${busKey}">
-                            ${busDetails.timings.map(t => `<div class="timing">${t} min</div>`).join('')}
-                        </div>
-                    </div>`;
-                busInfoContainer.innerHTML += busInfo;
-            });
+                // Create bus line element
+                const busLineElement = document.createElement('div');
+                busLineElement.classList.add('bus-line');
+                busLineElement.innerHTML = `Bus ${busLine} &rarr; ${destination}`;
 
-            document.querySelectorAll('.bus-line').forEach(busLineElement => {
+                // Create timings element (hidden by default)
+                const timingsElement = document.createElement('div');
+                timingsElement.classList.add('timings');
+                timings.forEach(time => {
+                    const timingElement = document.createElement('div');
+                    timingElement.classList.add('timing');
+                    timingElement.textContent = time;
+                    timingsElement.appendChild(timingElement);
+                });
+
                 busLineElement.addEventListener('click', function () {
-                    const busKey = this.dataset.bus;
-                    const timingsElement = document.getElementById(`timings-${busKey}`);
                     timingsElement.classList.toggle('active');
                 });
+
+                // Append to the container
+                const busInfoItem = document.createElement('div');
+                busInfoItem.classList.add('bus-info-item');
+                busInfoItem.appendChild(busLineElement);
+                busInfoItem.appendChild(timingsElement);
+
+                busInfoContainer.appendChild(busInfoItem);
             });
 
+            if (Object.keys(buses).length === 0) {
+                busInfoContainer.innerHTML = "No bus timings found for the selected stop.";
+            }
         } catch (error) {
-            busInfoContainer.innerHTML = "Error fetching bus timings.";
+            busInfoContainer.innerHTML = "Error fetching bus information.";
+            console.error(error);
         }
     }
 
+    // Allow both pressing the button and hitting "Enter" to trigger fetching bus info
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
-
     busForm.addEventListener('submit', function (event) {
         event.preventDefault();
         fetchAndDisplayBusInfo();
     });
 
-    updateCurrentTime();
+    // Update current time display every second
     setInterval(updateCurrentTime, 1000);
 });
