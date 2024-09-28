@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentTimeDisplay = document.getElementById('current-time');
     const fetchBusTimingsButton = document.getElementById('fetch-bus-timings');
     const stopNameInput = document.getElementById('stop-name');
+    const busForm = document.getElementById('bus-form');
 
     function updateCurrentTime() {
         const now = new Date();
@@ -88,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
 
-    document.getElementById('bus-form').addEventListener('submit', function (event) {
+    busForm.addEventListener('submit', function (event) {
         event.preventDefault();
         fetchAndDisplayBusInfo();
     });
