@@ -1,166 +1,108 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #FFFFFF;
-    display: flex;
-    align-items: flex-start; /* Align the container at the top for better scrolling */
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    overflow-y: scroll; /* Allow scrolling on mobile devices */
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+    text-align: center;
 }
 
 .container {
-    text-align: center;
-    background-color: #FF6600;
-    border-radius: 15px;
-    padding: 40px;
-    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
     max-width: 800px;
-    width: 100%;
-    margin-bottom: 20px; /* Extra margin to avoid clipping on mobile */
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #FFFFFF;
-    font-size: 2.5rem;
+    font-size: 2.5em;
     margin-bottom: 20px;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    color: #FF6600;
 }
 
-.input-group {
+p {
+    font-size: 1.2em;
     margin-bottom: 20px;
-    text-align: left;
 }
 
-label {
-    display: block;
-    font-size: 1rem;
-    color: #FFFFFF;
-    margin-bottom: 8px;
+form {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
 }
 
-input[type="text"],
-input[type="number"] {
-    width: 100%;
+input[type="text"] {
     padding: 10px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    background-color: #FFFFFF;
-    color: #FF6600;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-input[type="text"]:focus,
-input[type="number"]:focus {
-    box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-button.btn {
-    background-color: #FFFFFF;
-    color: #FF6600;
+    font-size: 1.2em;
+    width: 60%;
+    margin-right: 10px;
     border: 2px solid #FF6600;
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    margin-top: 10px;
+    border-radius: 5px;
 }
 
-button.btn:hover {
+button {
+    padding: 10px 20px;
+    font-size: 1.2em;
     background-color: #FF6600;
-    color: #FFFFFF;
-    transform: translateY(-3px);
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
-#bus-info {
-    margin-top: 20px;
+button:hover {
+    background-color: #e65c00;
+}
+
+.bus-info {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
 }
 
 .bus-info-item {
-    background-color: #FFFFFF;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    color: #FF6600;
+    background-color: #fff;
+    border: 2px solid #FF6600;
+    border-radius: 5px;
+    padding: 10px;
     text-align: left;
 }
 
 .bus-line {
+    font-size: 1.2em;
     font-weight: bold;
-    color: #FF6600;
     cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: 10px;
-    background-color: #f1f1f1;
-    border-radius: 8px;
-    margin-bottom: 5px;
-    transition: background-color 0.3s ease;
-}
-
-.bus-line:hover {
-    background-color: #f9f9f9;
+    background-color: #FF6600;
+    color: white;
+    border-radius: 5px;
 }
 
 .timings {
     display: none;
-    padding: 10px;
-    border-top: 1px solid #eee;
+    padding-top: 10px;
 }
 
 .timings.active {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 10px;
+    display: block;
 }
 
 .timing {
-    background-color: #f2f2f2;
-    padding: 8px;
-    border-radius: 4px;
-    text-align: center;
+    font-size: 1em;
+    padding: 5px 0;
 }
 
-#current-time {
-    color: #FFFFFF;
-    font-size: 1rem;
-    margin-bottom: 15px;
-}
-
-/* Make sure the app is mobile-friendly with padding and spacing */
-@media (max-width: 600px) {
-    .container {
-        padding: 20px;
+@media screen and (max-width: 600px) {
+    .bus-info {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
 
-    h1 {
-        font-size: 2rem;
-    }
-
-    button.btn {
-        padding: 10px;
-    }
-
-    input[type="text"],
-    input[type="number"] {
-        font-size: 0.9rem;
-        padding: 8px;
-    }
-
-    .bus-info-item {
-        padding: 10px;
+    input[type="text"] {
+        width: 50%;
     }
 }

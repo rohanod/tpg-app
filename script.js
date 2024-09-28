@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentTimeDisplay = document.getElementById('current-time');
     const fetchBusTimingsButton = document.getElementById('fetch-bus-timings');
     const stopNameInput = document.getElementById('stop-name');
-    const busNumberInput = document.getElementById('bus-number');
     const busForm = document.getElementById('bus-form');
 
     function updateCurrentTime() {
@@ -24,20 +23,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function fetchStationBoard(stationId, busNumber) {
+    async function fetchStationBoard(stationId) {
         let url = `${apiUrl}/stationboard?id=${stationId}&limit=100&transportations[]=bus`;
         const response = await fetch(url);
         const data = await response.json();
-
-        if (busNumber) {
-            return data.stationboard.filter(bus => bus.number == busNumber);
-        }
         return data.stationboard;
     }
 
     async function fetchAndDisplayBusInfo() {
         const stopName = stopNameInput.value.trim();
-        const busNumber = busNumberInput.value.trim();
 
         if (!stopName) {
             busInfoContainer.innerHTML = "Please enter a bus stop name.";
@@ -46,12 +40,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const stationId = await fetchStationId(stopName);
-            const stationBoard = await fetchStationBoard(stationId, busNumber);
+            const stationBoard = await fetchStationBoard(stationId);
 
             busInfoContainer.innerHTML = '';
             const buses = {};
 
-            // Process stationboard, and group by bus line and destination
             stationBoard.forEach(bus => {
                 const minutesAway = Math.round((new Date(bus.stop.departure) - new Date()) / 60000);
                 if (minutesAway >= 0) {
@@ -68,19 +61,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // Display the buses in a collapsible format
             Object.keys(buses).forEach(busKey => {
                 const busInfo = buses[busKey];
                 const busLine = busKey.split('-')[0];
                 const destination = busInfo.destination;
                 const timings = busInfo.timings;
 
-                // Create bus line element
                 const busLineElement = document.createElement('div');
                 busLineElement.classList.add('bus-line');
                 busLineElement.innerHTML = `Bus ${busLine} &rarr; ${destination}`;
 
-                // Create timings element (hidden by default)
                 const timingsElement = document.createElement('div');
                 timingsElement.classList.add('timings');
                 timings.forEach(time => {
@@ -94,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     timingsElement.classList.toggle('active');
                 });
 
-                // Append to the container
                 const busInfoItem = document.createElement('div');
                 busInfoItem.classList.add('bus-info-item');
                 busInfoItem.appendChild(busLineElement);
@@ -112,13 +101,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Allow both pressing the button and hitting "Enter" to trigger fetching bus info
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
     busForm.addEventListener('submit', function (event) {
         event.preventDefault();
         fetchAndDisplayBusInfo();
     });
 
-    // Update current time display every second
     setInterval(updateCurrentTime, 1000);
 });
