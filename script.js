@@ -25,33 +25,29 @@ function fetchAndDisplayBusInfo() {
             busInfoContainer.innerHTML = '';
 
             data.stationboard.forEach((bus) => {
-                const busItem = document.createElement('div');
-                busItem.classList.add('bus-info-item');
-                busItem.innerHTML = `
-                    <div class="bus-line">Bus ${bus.number} From ${data.station.name} → ${bus.to}</div>
-                `;
-                busItem.addEventListener('click', () => showModal(bus, data.station.name));
-                busInfoContainer.appendChild(busItem);
+                if (bus.stop.station.name.toLowerCase() === stopName.toLowerCase()) {
+                    const busItem = document.createElement('div');
+                    busItem.classList.add('bus-info-item');
+                    busItem.innerHTML = `
+                        <div class="bus-line">Bus ${bus.number} From ${bus.stop.station.name} → ${bus.to}</div>
+                        <div class="departure-time">Departure: ${new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString()}</div>
+                    `;
+                    busItem.addEventListener('click', () => showModal(bus));
+                    busInfoContainer.appendChild(busItem);
+                }
             });
         });
 }
 
-function showModal(bus, currentStop) {
+function showModal(bus) {
     const modal = document.getElementById('popup-modal');
     const modalBody = document.getElementById('modal-body');
-
-    let stopIndex = bus.passList.findIndex(pass => pass.station.name === currentStop);
-
-    if (stopIndex === -1) {
-        stopIndex = 0;
-    }
-
-    const nextStops = bus.passList.slice(stopIndex, stopIndex + 5);
+    
     modalBody.innerHTML = `
-        <h2>Bus ${bus.number} From ${currentStop} → ${bus.to}</h2>
+        <h2>Bus ${bus.number} → ${bus.to}</h2>
         <p>Departure: ${new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString()}</p>
         <ul>
-            ${nextStops.map(pass => `
+            ${bus.passList.slice(0, 5).map(pass => `
                 <li>${pass.station.name}: ${new Date(pass.departureTimestamp * 1000).toLocaleTimeString()}</li>
             `).join('')}
         </ul>
