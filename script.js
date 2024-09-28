@@ -1,10 +1,3 @@
-document.getElementById('bus-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    fetchAndDisplayBusInfo();
-});
-
-document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
-
 function fetchAndDisplayBusInfo() {
     const stopName = document.getElementById('stop-name').value.trim();
     if (!stopName) return;
@@ -16,6 +9,9 @@ function fetchAndDisplayBusInfo() {
                 alert('No matching station found.');
                 return;
             }
+
+            console.log("Matching stations:", data.stations); // Debugging to print station names
+            
             const stationId = data.stations[0].id;
             return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=100`);
         })
@@ -44,37 +40,8 @@ function fetchAndDisplayBusInfo() {
                 busItem.addEventListener('click', () => showModal(bus, relevantStop));
                 busInfoContainer.appendChild(busItem);
             });
+        })
+        .catch(error => {
+            console.error('Error fetching bus info:', error);
         });
 }
-
-function showModal(bus, relevantStop) {
-    const modal = document.getElementById('popup-modal');
-    const modalBody = document.getElementById('modal-body');
-
-    const subsequentStops = bus.passList.slice(
-        bus.passList.indexOf(relevantStop) + 1,
-        bus.passList.indexOf(relevantStop) + 6
-    );
-
-    modalBody.innerHTML = `
-        <h2>Bus ${bus.number} → ${bus.to}</h2>
-        <p>Departure from ${relevantStop.station.name}: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</p>
-        <ul>
-            ${subsequentStops.map(pass => `
-                <li>${pass.station.name}: ${new Date(pass.departureTimestamp * 1000).toLocaleTimeString()}</li>
-            `).join('')}
-        </ul>
-    `;
-    modal.style.display = 'flex';
-}
-
-document.querySelector('.close').addEventListener('click', function () {
-    document.getElementById('popup-modal').style.display = 'none';
-});
-
-window.onclick = function (event) {
-    const modal = document.getElementById('popup-modal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-};
