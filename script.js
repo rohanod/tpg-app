@@ -15,7 +15,7 @@ async function fetchAndDisplayBusInfo() {
         const stationId = locationData.stations[0].id;
         console.log(`Station ID for ${stopName}: ${stationId}`);
 
-        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=50`);
+        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=5`);
         const stationboardData = await stationboardResponse.json();
         console.log('Bus stationboard data received:', stationboardData);
 
@@ -63,3 +63,8 @@ function displayMessage(message) {
     const busInfoContainer = document.getElementById('busInfoContainer');
     busInfoContainer.innerHTML = `<p>${message}</p>`;
 }
+
+document.getElementById('bus-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    fetchAndDisplayBusInfo();
+});
