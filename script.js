@@ -30,8 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return data.stationboard;
     }
 
-    async function fetchAndDisplayBusInfo() {
-        const stopName = stopNameInput.value.trim();
+    async function fetchAndDisplayBusInfo(event) {
+        event.preventDefault();
+        const stopName = stopNameInput ? stopNameInput.value.trim() : null;
 
         if (!stopName) {
             busInfoContainer.innerHTML = "Please enter a bus stop name.";
@@ -102,10 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
-    busForm.addEventListener('submit', function (event) {
-        event.preventDefault();
-        fetchAndDisplayBusInfo();
-    });
+    busForm.addEventListener('submit', fetchAndDisplayBusInfo);
 
     setInterval(updateCurrentTime, 1000);
 });
