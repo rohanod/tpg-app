@@ -5,67 +5,64 @@ document.getElementById('bus-form').addEventListener('submit', function (e) {
 
 document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
 
-function fetchAndDisplayBusInfo() {
+async function fetchAndDisplayBusInfo() {
     const stopName = document.getElementById('stop-name').value.trim();
     if (!stopName) return;
 
-    console.log(`Fetching data for stop: ${stopName}`); // Log the stop name for debug
+    try {
+        console.log(`Fetching data for stop: ${stopName}`);
 
-    fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Station data received:", data); // Log the response
+        const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`);
+        if (!locationResponse.ok) {
+            throw new Error(`Network response was not ok: ${locationResponse.statusText}`);
+        }
+        
+        const locationData = await locationResponse.json();
+        console.log('Station data received:', locationData);
 
-            if (!data || data.stations.length === 0) {
-                console.log("No stations found for the provided stop name.");
-                alert('No matching station found.');
-                return;
-            }
+        if (!locationData || locationData.stations.length === 0) {
+            alert('No matching station found.');
+            return;
+        }
 
-            const stationId = data.stations[0].id;
-            console.log(`Station ID for ${stopName}:`, stationId); // Log the station ID
-            
-            return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=50`);
-        })
-        .then(response => {
-            if (!response) return; // Exit if no response from previous fetch
-            return response.json();
-        })
-        .then(data => {
-            console.log("Bus stationboard data received:", data); // Log the stationboard data
+        const stationId = locationData.stations[0].id;
+        console.log(`Station ID for ${stopName}: ${stationId}`);
 
-            const busInfoContainer = document.getElementById('bus-info');
-            busInfoContainer.innerHTML = '';
+        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=50`);
+        if (!stationboardResponse.ok) {
+            throw new Error(`Network response was not ok: ${stationboardResponse.statusText}`);
+        }
 
-            const filteredBuses = data.stationboard.filter(bus => {
-                return bus.passList.some(pass => pass.station && pass.station.name && pass.station.name.toLowerCase() === stopName.toLowerCase());
-            });
+        const stationboardData = await stationboardResponse.json();
+        console.log('Bus stationboard data received:', stationboardData);
 
-            if (filteredBuses.length === 0) {
-                busInfoContainer.innerHTML = `<p>No buses departing from ${stopName} were found.</p>`;
-                return;
-            }
+        const busInfoContainer = document.getElementById('bus-info');
+        busInfoContainer.innerHTML = '';
 
-            filteredBuses.forEach(bus => {
-                const relevantStop = bus.passList.find(pass => pass.station && pass.station.name && pass.station.name.toLowerCase() === stopName.toLowerCase());
-                const busItem = document.createElement('div');
-                busItem.classList.add('bus-info-item');
-                busItem.innerHTML = `
-                    <div class="bus-line">Bus ${bus.number} From ${stopName} → ${bus.to}</div>
-                    <div class="departure-time">Departure: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</div>
-                `;
-                busItem.addEventListener('click', () => showModal(bus, relevantStop));
-                busInfoContainer.appendChild(busItem);
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching bus info:', error); // Log errors to console
+        const filteredBuses = stationboardData.stationboard.filter(bus => {
+            return bus.passList.some(pass => pass.station && pass.station.name === stopName);
         });
+
+        if (filteredBuses.length === 0) {
+            busInfoContainer.innerHTML = `<p>No buses departing from ${stopName} were found.</p>`;
+            return;
+        }
+
+        filteredBuses.forEach(bus => {
+            const relevantStop = bus.passList.find(pass => pass.station && pass.station.name === stopName);
+            const busItem = document.createElement('div');
+            busItem.classList.add('bus-info-item');
+            busItem.innerHTML = `
+                <div class="bus-line">Bus ${bus.number} From ${stopName} → ${bus.to}</div>
+                <div class="departure-time">Departure: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</div>
+            `;
+            busItem.addEventListener('click', () => showModal(bus, relevantStop));
+            busInfoContainer.appendChild(busItem);
+        });
+
+    } catch (error) {
+        console.error('Error fetching bus info:', error);
+    }
 }
 
 function showModal(bus, relevantStop) {
