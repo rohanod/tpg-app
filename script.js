@@ -25,7 +25,7 @@ function fetchAndDisplayBusInfo() {
             busInfoContainer.innerHTML = '';
 
             const filteredBuses = data.stationboard.filter(bus => {
-                return bus.passList.some(pass => pass.station.name.toLowerCase() === stopName.toLowerCase());
+                return bus.passList.some(pass => pass.station && pass.station.name && pass.station.name.toLowerCase() === stopName.toLowerCase());
             });
 
             if (filteredBuses.length === 0) {
@@ -34,7 +34,7 @@ function fetchAndDisplayBusInfo() {
             }
 
             filteredBuses.forEach(bus => {
-                const relevantStop = bus.passList.find(pass => pass.station.name.toLowerCase() === stopName.toLowerCase());
+                const relevantStop = bus.passList.find(pass => pass.station && pass.station.name && pass.station.name.toLowerCase() === stopName.toLowerCase());
                 const busItem = document.createElement('div');
                 busItem.classList.add('bus-info-item');
                 busItem.innerHTML = `
