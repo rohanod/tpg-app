@@ -1,68 +1,65 @@
-document.getElementById('bus-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    fetchAndDisplayBusInfo();
-});
-
-document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
-
 async function fetchAndDisplayBusInfo() {
-    const stopName = document.getElementById('stop-name').value.trim();
-    if (!stopName) return;
+    const stopName = document.getElementById('stopInput').value.trim();
+    console.log(`Fetching data for stop: ${stopName}`);
 
     try {
-        console.log(`Fetching data for stop: ${stopName}`);
-
         const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`);
-        if (!locationResponse.ok) {
-            throw new Error(`Network response was not ok: ${locationResponse.statusText}`);
-        }
-
         const locationData = await locationResponse.json();
         console.log('Station data received:', locationData);
 
-        if (!locationData || locationData.stations.length === 0) {
-            alert('No matching station found.');
+        if (locationData.stations.length === 0) {
+            displayMessage(`No buses departing from ${stopName} were found.`);
             return;
         }
 
         const stationId = locationData.stations[0].id;
         console.log(`Station ID for ${stopName}: ${stationId}`);
 
-        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=50`);
-        if (!stationboardResponse.ok) {
-            throw new Error(`Network response was not ok: ${stationboardResponse.statusText}`);
-        }
-
+        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=50`);
         const stationboardData = await stationboardResponse.json();
         console.log('Bus stationboard data received:', stationboardData);
 
-        const busInfoContainer = document.getElementById('bus-info');
-        busInfoContainer.innerHTML = '';
-
-        // Get the buses departing from the specified stop
-        const filteredBuses = stationboardData.stationboard.filter(bus => {
-            return bus.stop && bus.stop.station && bus.stop.station.name.toLowerCase() === stopName.toLowerCase();
-        });
-
-        if (filteredBuses.length === 0) {
-            busInfoContainer.innerHTML = `<p>No buses departing from ${stopName} were found.</p>`;
+        if (stationboardData.stationboard.length === 0) {
+            displayMessage(`No buses departing from ${stopName} were found.`);
             return;
         }
 
-        filteredBuses.forEach(bus => {
-            // Get the departure time and format it properly
-            const departureTime = new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const buses = stationboardData.stationboard
+            .filter(entry => entry.stop && entry.stop.departure)
+            .map(entry => {
+                const departureTime = new Date(entry.stop.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return {
+                    busNumber: entry.number,
+                    to: entry.to,
+                    departure: departureTime
+                };
+            });
 
-            const busItem = document.createElement('div');
-            busItem.classList.add('bus-info-item');
-            busItem.innerHTML = `
-                <div class="bus-line">Bus ${bus.number} From ${stopName} → ${bus.to}</div>
-                <div class="departure-time">Departure: ${departureTime}</div>
-            `;
-            busInfoContainer.appendChild(busItem);
-        });
+        if (buses.length === 0) {
+            displayMessage(`No buses departing from ${stopName} were found.`);
+        } else {
+            displayBusInfo(buses);
+        }
 
     } catch (error) {
-        console.error('Error fetching bus info:', error);
+        console.error('Error fetching or processing data:', error);
+        displayMessage('An error occurred while fetching bus information.');
     }
+}
+
+function displayBusInfo(buses) {
+    const busInfoContainer = document.getElementById('busInfoContainer');
+    busInfoContainer.innerHTML = ''; // Clear previous results
+
+    buses.forEach(bus => {
+        const busElement = document.createElement('div');
+        busElement.classList.add('bus-info');
+        busElement.innerHTML = `<strong>Bus ${bus.busNumber}</strong> → ${bus.to} <br> Departure: ${bus.departure}`;
+        busInfoContainer.appendChild(busElement);
+    });
+}
+
+function displayMessage(message) {
+    const busInfoContainer = document.getElementById('busInfoContainer');
+    busInfoContainer.innerHTML = `<p>${message}</p>`;
 }
