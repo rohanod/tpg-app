@@ -39,9 +39,9 @@ async function fetchAndDisplayBusInfo() {
         const busInfoContainer = document.getElementById('bus-info');
         busInfoContainer.innerHTML = '';
 
-        // Filter the buses to only show those departing from the current stop
+        // Get the buses departing from the specified stop
         const filteredBuses = stationboardData.stationboard.filter(bus => {
-            return bus.stop.station.name.toLowerCase() === stopName.toLowerCase();
+            return bus.stop && bus.stop.station && bus.stop.station.name.toLowerCase() === stopName.toLowerCase();
         });
 
         if (filteredBuses.length === 0) {
@@ -50,9 +50,9 @@ async function fetchAndDisplayBusInfo() {
         }
 
         filteredBuses.forEach(bus => {
-            // Get the departure timestamp and convert it to a readable time
+            // Get the departure time and format it properly
             const departureTime = new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
+
             const busItem = document.createElement('div');
             busItem.classList.add('bus-info-item');
             busItem.innerHTML = `
