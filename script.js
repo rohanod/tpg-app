@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const apiUrl = "https://transport.opendata.ch/v1";
     const busInfoContainer = document.getElementById('bus-info');
     const currentTimeDisplay = document.getElementById('current-time');
-    const fetchBusTimingsButton = document.getElementById('fetch-bus-timings');
     const stopNameInput = document.getElementById('stop-name');
     const busForm = document.getElementById('bus-form');
 
@@ -102,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    fetchBusTimingsButton.addEventListener('click', fetchAndDisplayBusInfo);
     busForm.addEventListener('submit', fetchAndDisplayBusInfo);
 
     setInterval(updateCurrentTime, 1000);
