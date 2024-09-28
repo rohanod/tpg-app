@@ -5,7 +5,6 @@ async function fetchAndDisplayBusInfo() {
     try {
         const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`);
         const locationData = await locationResponse.json();
-        console.log('Location data received:', locationData);
 
         if (locationData.stations.length === 0) {
             displayMessage(`No buses departing from ${stopName} were found.`);
@@ -16,7 +15,6 @@ async function fetchAndDisplayBusInfo() {
 
         const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=50`);
         const stationboardData = await stationboardResponse.json();
-        console.log('Stationboard data received:', stationboardData);
 
         if (stationboardData.stationboard.length === 0) {
             displayMessage(`No buses departing from ${stopName} were found.`);
@@ -55,6 +53,11 @@ async function fetchAndDisplayBusInfo() {
 
 function displayBusInfo(buses) {
     const busInfoContainer = document.getElementById('bus-info');
+    if (!busInfoContainer) {
+        console.error('Bus info container element not found!');
+        return;
+    }
+
     busInfoContainer.innerHTML = '';
 
     buses.forEach(bus => {
@@ -67,6 +70,11 @@ function displayBusInfo(buses) {
 
 function displayMessage(message) {
     const busInfoContainer = document.getElementById('bus-info');
+    if (!busInfoContainer) {
+        console.error('Bus info container element not found!');
+        return;
+    }
+
     busInfoContainer.innerHTML = `<p>${message}</p>`;
 }
 
