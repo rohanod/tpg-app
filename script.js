@@ -16,7 +16,7 @@ async function fetchAndDisplayBusInfo() {
         if (!locationResponse.ok) {
             throw new Error(`Network response was not ok: ${locationResponse.statusText}`);
         }
-        
+
         const locationData = await locationResponse.json();
         console.log('Station data received:', locationData);
 
@@ -39,8 +39,9 @@ async function fetchAndDisplayBusInfo() {
         const busInfoContainer = document.getElementById('bus-info');
         busInfoContainer.innerHTML = '';
 
+        // Filter the buses to only show those departing from the current stop
         const filteredBuses = stationboardData.stationboard.filter(bus => {
-            return bus.passList.some(pass => pass.station && pass.station.name === stopName);
+            return bus.stop.station.name.toLowerCase() === stopName.toLowerCase();
         });
 
         if (filteredBuses.length === 0) {
@@ -49,14 +50,15 @@ async function fetchAndDisplayBusInfo() {
         }
 
         filteredBuses.forEach(bus => {
-            const relevantStop = bus.passList.find(pass => pass.station && pass.station.name === stopName);
+            // Get the departure timestamp and convert it to a readable time
+            const departureTime = new Date(bus.stop.departureTimestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
             const busItem = document.createElement('div');
             busItem.classList.add('bus-info-item');
             busItem.innerHTML = `
                 <div class="bus-line">Bus ${bus.number} From ${stopName} → ${bus.to}</div>
-                <div class="departure-time">Departure: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</div>
+                <div class="departure-time">Departure: ${departureTime}</div>
             `;
-            busItem.addEventListener('click', () => showModal(bus, relevantStop));
             busInfoContainer.appendChild(busItem);
         });
 
@@ -64,35 +66,3 @@ async function fetchAndDisplayBusInfo() {
         console.error('Error fetching bus info:', error);
     }
 }
-
-function showModal(bus, relevantStop) {
-    const modal = document.getElementById('popup-modal');
-    const modalBody = document.getElementById('modal-body');
-
-    const subsequentStops = bus.passList.slice(
-        bus.passList.indexOf(relevantStop) + 1,
-        bus.passList.indexOf(relevantStop) + 6
-    );
-
-    modalBody.innerHTML = `
-        <h2>Bus ${bus.number} → ${bus.to}</h2>
-        <p>Departure from ${relevantStop.station.name}: ${new Date(relevantStop.departureTimestamp * 1000).toLocaleTimeString()}</p>
-        <ul>
-            ${subsequentStops.map(pass => `
-                <li>${pass.station.name}: ${new Date(pass.departureTimestamp * 1000).toLocaleTimeString()}</li>
-            `).join('')}
-        </ul>
-    `;
-    modal.style.display = 'flex';
-}
-
-document.querySelector('.close').addEventListener('click', function () {
-    document.getElementById('popup-modal').style.display = 'none';
-});
-
-window.onclick = function (event) {
-    const modal = document.getElementById('popup-modal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-};
