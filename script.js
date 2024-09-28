@@ -30,7 +30,7 @@ function fetchAndDisplayBusInfo() {
             const stationId = data.stations[0].id;
             console.log(`Station ID for ${stopName}:`, stationId); // Log the station ID
             
-            return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=100`);
+            return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=50`);
         })
         .then(response => {
             if (!response) return; // Exit if no response from previous fetch
