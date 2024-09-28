@@ -28,6 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
         let url = `${apiUrl}/stationboard?id=${stationId}&limit=100&transportations[]=bus`;
         const response = await fetch(url);
         const data = await response.json();
+
+        if (busNumber) {
+            return data.stationboard.filter(bus => bus.number == busNumber);
+        }
         return data.stationboard;
     }
 
