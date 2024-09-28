@@ -1,3 +1,5 @@
+let debounceTimer;
+
 document.getElementById('bus-form').addEventListener('submit', function (e) {
     e.preventDefault();
     fetchAndDisplayBusInfo();
@@ -5,70 +7,82 @@ document.getElementById('bus-form').addEventListener('submit', function (e) {
 
 document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
 
+document.getElementById('stop-name').addEventListener('keyup', function (e) {
+    if (e.key === 'Enter') {
+        fetchAndDisplayBusInfo();
+    }
+});
+
+function debounceFetch(callback, delay = 300) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(callback, delay);
+}
+
 function fetchAndDisplayBusInfo() {
-    const stopName = document.getElementById('stop-name').value;
-    if (!stopName) return;
+    const stopName = document.getElementById('stop-name').value.trim();
+    if (!stopName) return displayError('Please enter a bus stop name.');
 
-    fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.stations.length === 0) {
-                alert('No bus stops found.');
-                return;
-            }
-            const stationId = data.stations[0].id;
-            return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=100`);
-        })
-        .then(response => response.json())
-        .then(data => {
-            const busInfoContainer = document.getElementById('bus-info');
-            busInfoContainer.innerHTML = '';
+    debounceFetch(() => {
+        fetch(`https://transport.opendata.ch/v1/locations?query=${stopName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.stations.length) throw new Error('No bus stop found.');
+                const stationId = data.stations[0].id;
+                return fetch(`https://transport.opendata.ch/v1/stationboard?station=${stationId}&limit=100`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayBusInfo(data.stationboard);
+            })
+            .catch(error => displayError(error.message));
+    });
+}
 
-            data.stationboard.forEach((bus) => {
-                const busItem = document.createElement('div');
-                busItem.classList.add('bus-info-item');
-                busItem.innerHTML = `
-                    <div class="bus-line">Bus ${bus.number} → ${bus.to}</div>
-                `;
-                busItem.addEventListener('click', () => showModal(bus));
-                busInfoContainer.appendChild(busItem);
-            });
-        });
+function displayBusInfo(busList) {
+    const busInfoContainer = document.getElementById('bus-info');
+    busInfoContainer.innerHTML = '';
+
+    busList.forEach((bus) => {
+        const busItem = document.createElement('div');
+        busItem.classList.add('bus-info-item');
+        busItem.innerHTML = `<div class="bus-line">Bus ${bus.number} → ${bus.to}</div>`;
+        busItem.addEventListener('click', () => showModal(bus));
+        busInfoContainer.appendChild(busItem);
+    });
 }
 
 function showModal(bus) {
     const modal = document.getElementById('popup-modal');
     const modalBody = document.getElementById('modal-body');
 
-    const sortedTimes = bus.passList
-        .map(stop => {
-            return {
-                stationName: stop.station.name ? stop.station.name : 'Unknown stop',
-                departureTime: stop.departure
-            };
-        })
-        .slice(0, 5); // Limit to 5 times
+    modalBody.innerHTML = `
+        <h2>Bus ${bus.number} → ${bus.to}</h2>
+        <p>Departure: ${new Date(bus.stop.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+        <ul>
+            ${bus.passList.slice(0, 5).map(stop => `<li>${stop.station.name}: ${new Date(stop.departure).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>`).join('')}
+        </ul>
+    `;
 
-    if (sortedTimes.length === 0) {
-        modalBody.innerHTML = `<h2>Bus ${bus.number} → ${bus.to}</h2><p>No upcoming departures.</p>`;
-    } else {
-        modalBody.innerHTML = `
-            <h2>Bus ${bus.number} → ${bus.to}</h2>
-            <ul>
-                ${sortedTimes.map(stop => `<li>${stop.stationName}: ${stop.departureTime}</li>`).join('')}
-            </ul>
-        `;
-    }
     modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('visible'), 10); // Smooth transition
 }
 
-document.querySelector('.close').addEventListener('click', function () {
-    document.getElementById('popup-modal').style.display = 'none';
-});
+function closeModal() {
+    const modal = document.getElementById('popup-modal');
+    modal.classList.remove('visible');
+    setTimeout(() => modal.style.display = 'none', 300); // Match the transition duration
+}
+
+document.querySelector('.close').addEventListener('click', closeModal);
 
 window.onclick = function (event) {
     const modal = document.getElementById('popup-modal');
     if (event.target === modal) {
-        modal.style.display = 'none';
+        closeModal();
     }
 };
+
+function displayError(message) {
+    const busInfoContainer = document.getElementById('bus-info');
+    busInfoContainer.innerHTML = `<div class="error-message">${message}</div>`;
+}
