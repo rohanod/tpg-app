@@ -13,7 +13,7 @@ async function fetchAndDisplayBusInfo() {
 
         const stationId = locationData.stations[0].id;
 
-        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=50`);
+        const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${stationId}&limit=300`);
         const stationboardData = await stationboardResponse.json();
 
         if (stationboardData.stationboard.length === 0) {
