@@ -87,18 +87,19 @@ function displayModal(busDetails) {
 
     modalBody.innerHTML = '';
 
-    busDetails.forEach(bus => {
-        const busElement = document.createElement('div');
-        busElement.innerHTML = `<h3>${bus.vehicleType} ${bus.busNumber} - To: ${bus.to}</h3>`;
-        const busList = document.createElement('ul');
+    const bus = busDetails[0];
+    const busElement = document.createElement('div');
+    busElement.innerHTML = `<h3>${bus.vehicleType} ${bus.busNumber} - To: ${bus.to}</h3>`;
+    const busList = document.createElement('ul');
 
+    busDetails.forEach(bus => {
         const busItem = document.createElement('li');
         busItem.textContent = `${bus.minutesUntilDeparture} min`;
         busList.appendChild(busItem);
-
-        busElement.appendChild(busList);
-        modalBody.appendChild(busElement);
     });
+
+    busElement.appendChild(busList);
+    modalBody.appendChild(busElement);
 
     modal.style.display = 'block';
 }
