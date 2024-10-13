@@ -87,27 +87,17 @@ function displayModal(busDetails) {
 
     modalBody.innerHTML = '';
 
-    const directions = busDetails.reduce((acc, bus) => {
-        if (!acc[bus.to]) {
-            acc[bus.to] = [];
-        }
-        acc[bus.to].push(bus);
-        return acc;
-    }, {});
-
-    Object.keys(directions).forEach(direction => {
-        const directionElement = document.createElement('div');
-        directionElement.innerHTML = `<h3>To: ${direction}</h3>`;
+    busDetails.forEach(bus => {
+        const busElement = document.createElement('div');
+        busElement.innerHTML = `<h3>${bus.vehicleType} ${bus.busNumber} - To: ${bus.to}</h3>`;
         const busList = document.createElement('ul');
 
-        directions[direction].forEach(bus => {
-            const busItem = document.createElement('li');
-            busItem.textContent = `${bus.minutesUntilDeparture} min`;
-            busList.appendChild(busItem);
-        });
+        const busItem = document.createElement('li');
+        busItem.textContent = `${bus.minutesUntilDeparture} min`;
+        busList.appendChild(busItem);
 
-        directionElement.appendChild(busList);
-        modalBody.appendChild(directionElement);
+        busElement.appendChild(busList);
+        modalBody.appendChild(busElement);
     });
 
     modal.style.display = 'block';
