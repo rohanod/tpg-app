@@ -23,28 +23,33 @@ async function fetchAndDisplayBusInfo() {
 
         const now = moment().tz(timeZone);
 
-        const buses = stationboardData.stationboard
+        // Grouping buses by number
+        const groupedBuses = stationboardData.stationboard
             .filter(entry => entry.stop && entry.stop.departure)
             .map(entry => {
                 const departureTime = moment.tz(entry.stop.departure, timeZone);
-                const vehicleType = entry.category === 'T' ? 'Tram' : 'Bus'; // Categorizing based on category field
+                const vehicleType = entry.category === 'T' ? 'Tram' : 'Bus';
                 return {
                     vehicleType,
                     busNumber: entry.number,
                     to: entry.to,
-                    departure: departureTime
+                    departure: departureTime,
+                    minutesUntilDeparture: Math.ceil(moment.duration(departureTime.diff(now)).asMinutes())
                 };
             })
             .filter(bus => bus.departure.isAfter(now))
-            .map(bus => ({
-                ...bus,
-                departureFormatted: bus.departure.format('hh:mm A')
-            }));
+            .reduce((acc, bus) => {
+                if (!acc[bus.busNumber]) {
+                    acc[bus.busNumber] = [];
+                }
+                acc[bus.busNumber].push(bus);
+                return acc;
+            }, {});
 
-        if (buses.length === 0) {
+        if (Object.keys(groupedBuses).length === 0) {
             displayMessage(`No upcoming buses or trams departing from ${stopName} were found.`);
         } else {
-            displayBusInfo(buses);
+            displayBusInfo(groupedBuses);
         }
 
     } catch (error) {
@@ -53,7 +58,7 @@ async function fetchAndDisplayBusInfo() {
     }
 }
 
-function displayBusInfo(buses) {
+function displayBusInfo(groupedBuses) {
     const busInfoContainer = document.getElementById('bus-info');
     if (!busInfoContainer) {
         console.error('Bus info container element not found!');
@@ -62,23 +67,54 @@ function displayBusInfo(buses) {
 
     busInfoContainer.innerHTML = '';
 
-    buses.forEach(bus => {
+    Object.keys(groupedBuses).forEach(busNumber => {
         const busElement = document.createElement('div');
         busElement.classList.add('bus-info-item');
-        busElement.innerHTML = `<strong>${bus.vehicleType} ${bus.busNumber}</strong> → ${bus.to} <br> Departure: ${bus.departureFormatted}`;
+        busElement.innerHTML = `<strong>${groupedBuses[busNumber][0].vehicleType} ${busNumber}</strong>`;
+
+        busElement.addEventListener('click', () => {
+            displayModal(groupedBuses[busNumber]);
+        });
+
         busInfoContainer.appendChild(busElement);
     });
 }
 
-function displayMessage(message) {
-    const busInfoContainer = document.getElementById('bus-info');
-    if (!busInfoContainer) {
-        console.error('Bus info container element not found!');
-        return;
-    }
+function displayModal(busDetails) {
+    const modal = document.getElementById('popup-modal');
+    const modalBody = document.getElementById('modal-body');
 
-    busInfoContainer.innerHTML = `<p>${message}</p>`;
+    modalBody.innerHTML = '';
+
+    const directions = busDetails.reduce((acc, bus) => {
+        if (!acc[bus.to]) {
+            acc[bus.to] = [];
+        }
+        acc[bus.to].push(bus);
+        return acc;
+    }, {});
+
+    Object.keys(directions).forEach(direction => {
+        const directionElement = document.createElement('div');
+        directionElement.innerHTML = `<h3>To: ${direction}</h3>`;
+        const busList = document.createElement('ul');
+
+        directions[direction].forEach(bus => {
+            const busItem = document.createElement('li');
+            busItem.textContent = `${bus.minutesUntilDeparture} min`;
+            busList.appendChild(busItem);
+        });
+
+        directionElement.appendChild(busList);
+        modalBody.appendChild(directionElement);
+    });
+
+    modal.style.display = 'block';
 }
+
+document.querySelector('.close').addEventListener('click', () => {
+    document.getElementById('popup-modal').style.display = 'none';
+});
 
 document.getElementById('bus-form').addEventListener('submit', function (e) {
     e.preventDefault();
