@@ -23,7 +23,7 @@ async function fetchAndDisplayBusInfo() {
 
         const now = moment().tz(timeZone);
 
-        // Grouping buses by number
+        // Grouping buses by number and direction
         const groupedBuses = stationboardData.stationboard
             .filter(entry => entry.stop && entry.stop.departure)
             .map(entry => {
@@ -39,10 +39,11 @@ async function fetchAndDisplayBusInfo() {
             })
             .filter(bus => bus.departure.isAfter(now))
             .reduce((acc, bus) => {
-                if (!acc[bus.busNumber]) {
-                    acc[bus.busNumber] = [];
+                const key = `${bus.busNumber} - ${bus.to}`;
+                if (!acc[key]) {
+                    acc[key] = [];
                 }
-                acc[bus.busNumber].push(bus);
+                acc[key].push(bus);
                 return acc;
             }, {});
 
@@ -67,13 +68,13 @@ function displayBusInfo(groupedBuses) {
 
     busInfoContainer.innerHTML = '';
 
-    Object.keys(groupedBuses).forEach(busNumber => {
+    Object.keys(groupedBuses).forEach(busKey => {
         const busElement = document.createElement('div');
         busElement.classList.add('bus-info-item');
-        busElement.innerHTML = `<strong>${groupedBuses[busNumber][0].vehicleType} ${busNumber}</strong>`;
+        busElement.innerHTML = `<strong>${groupedBuses[busKey][0].vehicleType} ${busKey}</strong>`;
 
         busElement.addEventListener('click', () => {
-            displayModal(groupedBuses[busNumber]);
+            displayModal(groupedBuses[busKey]);
         });
 
         busInfoContainer.appendChild(busElement);
