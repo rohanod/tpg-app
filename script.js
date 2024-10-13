@@ -113,4 +113,13 @@ document.getElementById('bus-form').addEventListener('submit', function (e) {
     fetchAndDisplayBusInfo();
 });
 
+document.getElementById('fetch-bus-timings').addEventListener('click', fetchAndDisplayBusInfo);
+
+document.getElementById('stop-name').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        fetchAndDisplayBusInfo();
+    }
+});
+
 setInterval(fetchAndDisplayBusInfo, 5000);
