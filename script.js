@@ -39,7 +39,7 @@ async function fetchAndDisplayBusInfo() {
             })
             .filter(bus => bus.departure.isAfter(now))
             .reduce((acc, bus) => {
-                const key = `${bus.busNumber} - ${bus.to}`;
+                const key = `${bus.vehicleType} ${bus.busNumber}: ${bus.to}`;
                 if (!acc[key]) {
                     acc[key] = [];
                 }
@@ -71,7 +71,7 @@ function displayBusInfo(groupedBuses) {
     Object.keys(groupedBuses).forEach(busKey => {
         const busElement = document.createElement('div');
         busElement.classList.add('bus-info-item');
-        busElement.innerHTML = `<strong>${groupedBuses[busKey][0].vehicleType} ${busKey}</strong>`;
+        busElement.innerHTML = `<strong>${busKey}</strong>`;
 
         busElement.addEventListener('click', () => {
             displayModal(groupedBuses[busKey]);
