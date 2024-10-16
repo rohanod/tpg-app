@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TPG Bus and Tram Timings</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js" defer></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -14,7 +13,7 @@
         <h1>TPG Bus and Tram Timings</h1>
         <form id="bus-form">
             <input type="text" id="stop-name" placeholder="Enter stop name" required>
-            <button type="submit" id="fetch-bus-timings">Get Timings</button>
+            <input type="text" id="vehicle-numbers" placeholder="Enter bus/tram numbers (optional)">
         </form>
         <div id="bus-info" class="bus-info-container"></div>
     </div>
