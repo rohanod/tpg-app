@@ -65,7 +65,7 @@ input::placeholder {
     border-radius: 5px;
     cursor: pointer;
     text-align: center;
-    margin: 10px 0; /* Added margin to space out vertically */
+    margin: 10px 0;
 }
 
 .bus-info-item:hover {
@@ -155,24 +155,6 @@ input::placeholder {
     .direction-column {
         flex: 1 1 100%;
     }
-}
-
-.return-button {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: #FF6600;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 2;
-    font-size: 1em;
-}
-
-.return-button:hover {
-    background-color: #e65c00;
 }
 
 body.kiosk-mode {

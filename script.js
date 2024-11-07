@@ -126,14 +126,12 @@ function showKioskModeUI() {
     document.body.classList.add('kiosk-mode');
     document.querySelector('.container').classList.add('kiosk-mode');
     document.getElementById('bus-form').style.display = 'none';
-    document.getElementById('return-button').style.display = 'block';
 }
 
 function showNormalModeUI() {
     document.body.classList.remove('kiosk-mode');
     document.querySelector('.container').classList.remove('kiosk-mode');
     document.getElementById('bus-form').style.display = 'flex';
-    document.getElementById('return-button').style.display = 'none';
 }
 
 function exitKioskMode() {
@@ -145,10 +143,6 @@ function exitKioskMode() {
     showNormalModeUI();
     fetchAndDisplayBusInfo();
 }
-
-document.getElementById('return-button').addEventListener('click', () => {
-    exitKioskMode();
-});
 
 document.addEventListener('keydown', function(event) {
     if (event.shiftKey && event.key.toLowerCase() === 'k') {
