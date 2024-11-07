@@ -152,6 +152,32 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+document.getElementById('readme-button').addEventListener('click', function() {
+    const readmeModal = document.getElementById('readme-modal');
+    const readmeBody = document.getElementById('readme-body');
+    readmeBody.innerHTML = `
+        <h2>Readme / Documentation</h2>
+        <p>This application displays upcoming bus and tram timings from TPG (Geneva Public Transport).</p>
+        <h3>How to Use</h3>
+        <ol>
+            <li>Enter the name of the stop in the "Enter stop name" field.</li>
+            <li>Optionally, enter specific bus or tram numbers separated by commas in the "Enter bus/tram numbers (optional)" field.</li>
+            <li>The upcoming departures will be displayed below.</li>
+            <li>Click on a bus or tram to see more detailed timings.</li>
+        </ol>
+        <h3>Kiosk Mode</h3>
+        <p>To activate kiosk mode, add stops and bus/tram numbers as URL parameters and include <code>?kiosk=true</code> in the URL.</p>
+        <p>For example: <code>?stop=Stop1&numbers=Bus1,Bus2&stop2=Stop2&numbers2=Bus3,Bus4&kiosk=true</code></p>
+        <p>In kiosk mode, the display cycles through the configured stops automatically.</p>
+        <p>To exit kiosk mode, press <strong>Shift + K</strong> on your keyboard.</p>
+    `;
+    readmeModal.style.display = 'block';
+});
+
+document.querySelector('.close-readme').addEventListener('click', function() {
+    document.getElementById('readme-modal').style.display = 'none';
+});
+
 async function fetchAndDisplayBusInfo() {
     const stopName = document.getElementById('stop-name').value.trim();
     const vehicleNumbersInput = document.getElementById('vehicle-numbers').value.trim();
@@ -344,6 +370,10 @@ function displayMessage(message) {
 
 document.querySelector('.close').addEventListener('click', () => {
     document.getElementById('popup-modal').style.display = 'none';
+});
+
+document.querySelector('.close-readme').addEventListener('click', function() {
+    document.getElementById('readme-modal').style.display = 'none';
 });
 
 window.addEventListener('popstate', autofillStopNameFromURL);

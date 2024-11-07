@@ -99,9 +99,11 @@ input::placeholder {
     max-width: 600px;
     text-align: center;
     position: relative;
+    overflow-y: auto;
+    max-height: 80vh;
 }
 
-.close {
+.close, .close-readme {
     position: absolute;
     top: 10px;
     right: 15px;
@@ -110,11 +112,11 @@ input::placeholder {
     color: #FF6600;
 }
 
-.close:hover {
+.close:hover, .close-readme:hover {
     color: #e65c00;
 }
 
-.modal-body {
+.modal-body, .readme-body {
     margin-top: 20px;
 }
 
@@ -222,8 +224,17 @@ body.kiosk-mode {
     color: #ffffff;
 }
 
-@media screen and (max-width: 600px) {
-    .grid-container {
-        grid-template-columns: 1fr;
-    }
+.readme-button {
+    background-color: #FF6600;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-bottom: 20px;
+}
+
+.readme-button:hover {
+    background-color: #e65c00;
 }
