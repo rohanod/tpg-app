@@ -136,7 +136,7 @@ function showNormalModeUI() {
     document.getElementById('return-button').style.display = 'none';
 }
 
-document.getElementById('return-button').addEventListener('click', () => {
+function exitKioskMode() {
     kioskMode = false;
     stops = [];
     currentStopIndex = 0;
@@ -144,6 +144,18 @@ document.getElementById('return-button').addEventListener('click', () => {
     updateURLParams();
     showNormalModeUI();
     fetchAndDisplayBusInfo();
+}
+
+document.getElementById('return-button').addEventListener('click', () => {
+    exitKioskMode();
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.shiftKey && event.key.toLowerCase() === 'k') {
+        if (kioskMode) {
+            exitKioskMode();
+        }
+    }
 });
 
 async function fetchAndDisplayBusInfo() {
