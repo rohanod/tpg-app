@@ -3,6 +3,7 @@ let kioskMode = false;
 let stops = [];
 let currentStopIndex = 0;
 let kioskInterval;
+let language = 'en';
 
 function updateURLParams() {
     const newUrl = new URL(window.location);
@@ -155,22 +156,7 @@ document.addEventListener('keydown', function(event) {
 document.getElementById('readme-button').addEventListener('click', function() {
     const readmeModal = document.getElementById('readme-modal');
     const readmeBody = document.getElementById('readme-body');
-    readmeBody.innerHTML = `
-        <h2>Readme / Documentation</h2>
-        <p>This application displays upcoming bus and tram timings from TPG (Geneva Public Transport).</p>
-        <h3>How to Use</h3>
-        <ol>
-            <li>Enter the name of the stop in the "Enter stop name" field.</li>
-            <li>Optionally, enter specific bus or tram numbers separated by commas in the "Enter bus/tram numbers (optional)" field.</li>
-            <li>The upcoming departures will be displayed below.</li>
-            <li>Click on a bus or tram to see more detailed timings.</li>
-        </ol>
-        <h3>Kiosk Mode</h3>
-        <p>To activate kiosk mode, add stops and bus/tram numbers as URL parameters and include <code>?kiosk=true</code> in the URL.</p>
-        <p>For example: <code>?stop=Stop1&numbers=Bus1,Bus2&stop2=Stop2&numbers2=Bus3,Bus4&kiosk=true</code></p>
-        <p>In kiosk mode, the display cycles through the configured stops automatically.</p>
-        <p>To exit kiosk mode, press <strong>Shift + K</strong> on your keyboard.</p>
-    `;
+    readmeBody.innerHTML = getReadmeContent();
     readmeModal.style.display = 'block';
 });
 
@@ -178,20 +164,101 @@ document.querySelector('.close-readme').addEventListener('click', function() {
     document.getElementById('readme-modal').style.display = 'none';
 });
 
+document.getElementById('language-switch').addEventListener('change', function() {
+    language = this.checked ? 'fr' : 'en';
+    document.getElementById('language-label').textContent = language.toUpperCase();
+    updateLanguage();
+    fetchAndDisplayBusInfo();
+});
+
+function updateLanguage() {
+    const elements = {
+        'main-title': {
+            'en': 'TPG Bus and Tram Timings',
+            'fr': 'Horaires des bus et trams TPG'
+        },
+        'stop-name': {
+            'en': 'Enter stop name',
+            'fr': 'Entrez le nom de l\'arrêt'
+        },
+        'vehicle-numbers': {
+            'en': 'Enter bus/tram numbers (optional)',
+            'fr': 'Entrez les numéros de bus/tram (facultatif)'
+        },
+        'readme-button': {
+            'en': 'Read Me',
+            'fr': 'Lire Moi'
+        }
+    };
+
+    for (let id in elements) {
+        const element = document.getElementById(id);
+        if (element.tagName === 'INPUT') {
+            element.placeholder = elements[id][language];
+        } else {
+            element.textContent = elements[id][language];
+        }
+    }
+}
+
+function getReadmeContent() {
+    if (language === 'en') {
+        return `
+            <h2>Welcome to the TPG Bus and Tram Timings Application</h2>
+            <p>This application provides real-time bus and tram schedules from TPG (Geneva Public Transport).</p>
+            <h3>How to Use</h3>
+            <ol>
+                <li><strong>Enter the stop name</strong> in the input field.</li>
+                <li><strong>Optional:</strong> Enter specific bus or tram numbers separated by commas.</li>
+                <li>The upcoming departures will display below.</li>
+                <li>Click on a bus or tram to see detailed timings.</li>
+            </ol>
+            <h3>Kiosk Mode</h3>
+            <p>Activate kiosk mode by adding stops and bus/tram numbers as URL parameters, including <code>?kiosk=true</code> in the URL.</p>
+            <p><strong>Example:</strong> <code>?stop=Stop1&numbers=Bus1,Bus2&stop2=Stop2&numbers2=Bus3,Bus4&kiosk=true</code></p>
+            <p>In kiosk mode, the display cycles through the configured stops automatically.</p>
+            <p><strong>Exit Kiosk Mode:</strong> Press <strong>Shift + K</strong> on your keyboard.</p>
+            <h3>Language Toggle</h3>
+            <p>Use the language toggle at the top to switch between English and French.</p>
+            <h3>Enjoy your journey!</h3>
+        `;
+    } else {
+        return `
+            <h2>Bienvenue sur l'application des horaires des bus et trams TPG</h2>
+            <p>Cette application fournit les horaires en temps réel des bus et trams des TPG (Transports publics genevois).</p>
+            <h3>Comment utiliser</h3>
+            <ol>
+                <li><strong>Entrez le nom de l'arrêt</strong> dans le champ de saisie.</li>
+                <li><strong>Facultatif :</strong> Entrez les numéros spécifiques de bus ou tram séparés par des virgules.</li>
+                <li>Les prochains départs s'afficheront ci-dessous.</li>
+                <li>Cliquez sur un bus ou un tram pour voir les horaires détaillés.</li>
+            </ol>
+            <h3>Mode Kiosque</h3>
+            <p>Activez le mode kiosque en ajoutant des arrêts et des numéros de bus/tram en tant que paramètres d'URL, en incluant <code>?kiosk=true</code> dans l'URL.</p>
+            <p><strong>Exemple :</strong> <code>?stop=Arret1&numbers=Bus1,Bus2&stop2=Arret2&numbers2=Bus3,Bus4&kiosk=true</code></p>
+            <p>En mode kiosque, l'affichage défile automatiquement à travers les arrêts configurés.</p>
+            <p><strong>Quitter le mode kiosque :</strong> Appuyez sur <strong>Maj + K</strong> sur votre clavier.</p>
+            <h3>Bascule de langue</h3>
+            <p>Utilisez la bascule de langue en haut pour passer de l'anglais au français.</p>
+            <h3>Bonne route !</h3>
+        `;
+    }
+}
+
 async function fetchAndDisplayBusInfo() {
     const stopName = document.getElementById('stop-name').value.trim();
     const vehicleNumbersInput = document.getElementById('vehicle-numbers').value.trim();
     const vehicleNumbers = vehicleNumbersInput ? vehicleNumbersInput.split(',').map(num => num.trim()) : [];
     const timeZone = 'Europe/Zurich';
     if (!stopName) {
-        displayMessage('Please enter a stop name.');
+        displayMessage(language === 'en' ? 'Please enter a stop name.' : 'Veuillez entrer un nom d\'arrêt.');
         return;
     }
     try {
         const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}`);
         const locationData = await locationResponse.json();
         if (!locationData.stations || locationData.stations.length === 0) {
-            displayMessage(`No buses or trams departing from "${stopName}" were found.`);
+            displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
             return;
         }
 
@@ -204,7 +271,7 @@ async function fetchAndDisplayBusInfo() {
         const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${encodeURIComponent(stationId)}&limit=300`);
         const stationboardData = await stationboardResponse.json();
         if (!stationboardData.stationboard || stationboardData.stationboard.length === 0) {
-            displayMessage(`No upcoming buses or trams departing from "${stopName}" were found.`);
+            displayMessage(language === 'en' ? `No upcoming buses or trams departing from "${stopName}" were found.` : `Aucun prochain bus ou tram au départ de "${stopName}" n'a été trouvé.`);
             return;
         }
         const now = moment().tz(timeZone);
@@ -213,7 +280,7 @@ async function fetchAndDisplayBusInfo() {
             .filter(entry => vehicleNumbers.length === 0 || vehicleNumbers.includes(entry.number))
             .map(entry => {
                 const departureTime = moment.tz(entry.stop.departure, timeZone);
-                const vehicleType = entry.category === 'T' ? 'Tram' : 'Bus';
+                const vehicleType = entry.category === 'T' ? (language === 'en' ? 'Tram' : 'Tram') : (language === 'en' ? 'Bus' : 'Bus');
                 return {
                     vehicleType,
                     busNumber: entry.number,
@@ -225,10 +292,10 @@ async function fetchAndDisplayBusInfo() {
             .filter(bus => bus.departure.isAfter(now));
 
         if (buses.length === 0) {
-            displayMessage(`No upcoming buses or trams departing from "${stopName}" were found.`);
+            displayMessage(language === 'en' ? `No upcoming buses or trams departing from "${stopName}" were found.` : `Aucun prochain bus ou tram au départ de "${stopName}" n'a été trouvé.`);
         } else {
             if (kioskMode) {
-                document.getElementById('stop-name-header').textContent = `Stop: ${stopName}`;
+                document.getElementById('stop-name-header').textContent = (language === 'en' ? 'Stop: ' : 'Arrêt : ') + stopName;
                 displayBusesKioskMode(buses);
             } else {
                 document.getElementById('stop-name-header').textContent = '';
@@ -237,7 +304,7 @@ async function fetchAndDisplayBusInfo() {
         }
     } catch (error) {
         console.error('Error fetching or processing data:', error);
-        displayMessage('An error occurred while fetching bus or tram information.');
+        displayMessage(language === 'en' ? 'An error occurred while fetching bus or tram information.' : 'Une erreur s\'est produite lors de la récupération des informations de bus ou de tram.');
     }
 }
 
@@ -273,7 +340,7 @@ function displayBusesKioskMode(buses) {
         Object.entries(directions).forEach(([direction, busList]) => {
             const directionHeader = document.createElement('div');
             directionHeader.classList.add('direction-header');
-            directionHeader.textContent = `To: ${direction}`;
+            directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
             bigBox.appendChild(directionHeader);
 
             const timeGrid = document.createElement('div');
@@ -340,7 +407,7 @@ function displayModal(busDetails) {
         const directionColumn = document.createElement('div');
         directionColumn.classList.add('direction-column');
         const directionHeader = document.createElement('h3');
-        directionHeader.textContent = `To: ${direction}`;
+        directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
         directionColumn.appendChild(directionHeader);
         const busList = document.createElement('ul');
         busList.classList.add('bus-list');
@@ -379,6 +446,7 @@ document.querySelector('.close-readme').addEventListener('click', function() {
 window.addEventListener('popstate', autofillStopNameFromURL);
 
 autofillStopNameFromURL();
+updateLanguage();
 
 if (kioskMode) {
     setInterval(fetchAndDisplayCurrentStop, 10000);
