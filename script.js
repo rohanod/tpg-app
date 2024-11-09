@@ -4,6 +4,8 @@ let stops = [];
 let currentStopIndex = 0;
 let kioskInterval;
 let language = 'en';
+let suggestedStops = [];
+let userSelectedStop = false;
 
 function updateURLParams() {
     const newUrl = new URL(window.location);
@@ -35,14 +37,53 @@ function updateURLParams() {
     window.history.pushState({}, '', newUrl);
 }
 
-document.getElementById('stop-name').addEventListener('input', function () {
+async function suggestStops(query) {
+    if (!query || userSelectedStop) {
+        document.getElementById('stop-suggestions').innerHTML = '';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(query)}&type=station`);
+        const data = await response.json();
+        suggestedStops = data.stations || [];
+        
+        const suggestionsDiv = document.getElementById('stop-suggestions');
+        suggestionsDiv.innerHTML = '';
+        
+        if (suggestedStops.length > 0) {
+            suggestedStops
+                .filter(station => station.id)
+                .slice(0, 5)
+                .forEach(station => {
+                    const suggestion = document.createElement('div');
+                suggestion.classList.add('stop-suggestion');
+                suggestion.textContent = station.name;
+                suggestion.addEventListener('click', () => {
+                    document.getElementById('stop-name').value = station.name;
+                    suggestionsDiv.innerHTML = '';
+                    userSelectedStop = true;
+                    fetchAndDisplayBusInfo();
+                });
+                suggestionsDiv.appendChild(suggestion);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+    }
+}
+
+document.getElementById('stop-name').addEventListener('input', function() {
     clearTimeout(debounceTimeout);
+    const query = this.value.trim();
+    userSelectedStop = false;
+    
     debounceTimeout = setTimeout(() => {
         if (!kioskMode) {
             updateURLParams();
-            fetchAndDisplayBusInfo();
+            suggestStops(query);
         } else {
-            stops[currentStopIndex].stopName = document.getElementById('stop-name').value.trim();
+            stops[currentStopIndex].stopName = query;
             updateURLParams();
         }
     }, 500);
@@ -53,7 +94,9 @@ document.getElementById('vehicle-numbers').addEventListener('input', function ()
     debounceTimeout = setTimeout(() => {
         if (!kioskMode) {
             updateURLParams();
-            fetchAndDisplayBusInfo();
+            if (userSelectedStop) {
+                fetchAndDisplayBusInfo();
+            }
         } else {
             const vehicleNumbersInput = document.getElementById('vehicle-numbers').value.trim();
             const vehicleNumbers = vehicleNumbersInput ? vehicleNumbersInput.split(',').map(num => num.trim()) : [];
@@ -94,6 +137,7 @@ function autofillStopNameFromURL() {
         const vehicleNumbers = vehicleNumbersParam ? vehicleNumbersParam.split(',').map(num => num.trim()) : [];
         if (stopName) {
             document.getElementById('stop-name').value = decodeURIComponent(stopName);
+            userSelectedStop = true;
         }
         if (vehicleNumbersParam) {
             document.getElementById('vehicle-numbers').value = decodeURIComponent(vehicleNumbersParam);
@@ -250,13 +294,36 @@ async function fetchAndDisplayBusInfo() {
     const vehicleNumbersInput = document.getElementById('vehicle-numbers').value.trim();
     const vehicleNumbers = vehicleNumbersInput ? vehicleNumbersInput.split(',').map(num => num.trim()) : [];
     const timeZone = 'Europe/Zurich';
+    
     if (!stopName) {
         displayMessage(language === 'en' ? 'Please enter a stop name.' : 'Veuillez entrer un nom d\'arrêt.');
         return;
     }
+
+    if (!userSelectedStop) {
+        try {
+            const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}&type=station`);
+            const locationData = await locationResponse.json();
+            
+            if (!locationData.stations || locationData.stations.length === 0) {
+                displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
+                return;
+            }
+
+            const exactMatch = locationData.stations.find(s => s.name.toLowerCase() === stopName.toLowerCase());
+            if (!exactMatch) {
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking stop name:', error);
+            return;
+        }
+    }
+
     try {
-        const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}`);
+        const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}&type=station`);
         const locationData = await locationResponse.json();
+        
         if (!locationData.stations || locationData.stations.length === 0) {
             displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
             return;
@@ -270,10 +337,12 @@ async function fetchAndDisplayBusInfo() {
         const stationId = station.id;
         const stationboardResponse = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${encodeURIComponent(stationId)}&limit=300`);
         const stationboardData = await stationboardResponse.json();
+        
         if (!stationboardData.stationboard || stationboardData.stationboard.length === 0) {
             displayMessage(language === 'en' ? `No upcoming buses or trams departing from "${stopName}" were found.` : `Aucun prochain bus ou tram au départ de "${stopName}" n'a été trouvé.`);
             return;
         }
+        
         const now = moment().tz(timeZone);
         let buses = stationboardData.stationboard
             .filter(entry => entry.stop && entry.stop.departure)
