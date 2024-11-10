@@ -6,6 +6,7 @@ let kioskInterval;
 let language = 'en';
 let suggestedStops = [];
 let userSelectedStop = false;
+let darkMode = localStorage.getItem('darkMode') === 'true';
 
 function updateURLParams() {
     const newUrl = new URL(window.location);
@@ -52,10 +53,24 @@ async function suggestStops(query) {
         suggestionsDiv.innerHTML = '';
         
         if (suggestedStops.length > 0) {
-            suggestedStops
-                .filter(station => station.id)
-                .slice(0, 5)
-                .forEach(station => {
+            const matchedStops = suggestedStops
+                .filter(station => station.id && station.name.toLowerCase().includes(query.toLowerCase()))
+                .sort((a, b) => {
+                    const aExact = a.name.toLowerCase() === query.toLowerCase();
+                    const bExact = b.name.toLowerCase() === query.toLowerCase();
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+                    
+                    const aStarts = a.name.toLowerCase().startsWith(query.toLowerCase());
+                    const bStarts = b.name.toLowerCase().startsWith(query.toLowerCase());
+                    if (aStarts && !bStarts) return -1;
+                    if (!aStarts && bStarts) return 1;
+                    
+                    return a.name.localeCompare(b.name);
+                })
+                .slice(0, 5);
+
+            matchedStops.forEach(station => {
                     const suggestion = document.createElement('div');
                 suggestion.classList.add('stop-suggestion');
                 suggestion.textContent = station.name;
@@ -86,7 +101,7 @@ document.getElementById('stop-name').addEventListener('input', function() {
             stops[currentStopIndex].stopName = query;
             updateURLParams();
         }
-    }, 500);
+    }, 300);
 });
 
 document.getElementById('vehicle-numbers').addEventListener('input', function () {
@@ -103,7 +118,7 @@ document.getElementById('vehicle-numbers').addEventListener('input', function ()
             stops[currentStopIndex].vehicleNumbers = vehicleNumbers;
             updateURLParams();
         }
-    }, 500);
+    }, 300);
 });
 
 function autofillStopNameFromURL() {
@@ -179,6 +194,25 @@ function showNormalModeUI() {
     document.getElementById('bus-form').style.display = 'flex';
 }
 
+function toggleDarkMode() {
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.classList.add('rotate');
+    
+    setTimeout(() => {
+        darkMode = !darkMode;
+        localStorage.setItem('darkMode', darkMode);
+        updateDarkMode();
+        themeToggle.classList.remove('rotate');
+    }, 500);
+}
+
+function updateDarkMode() {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    document.getElementById('theme-toggle').textContent = darkMode ? '🌙' : '☀️';
+}
+
+
+
 function exitKioskMode() {
     kioskMode = false;
     stops = [];
@@ -204,7 +238,7 @@ document.getElementById('readme-button').addEventListener('click', function() {
     readmeModal.style.display = 'block';
 });
 
-document.querySelector('.close-readme').addEventListener('click', function() {
+document.querySelector('.close-readme').addEventListener('click', () => {
     document.getElementById('readme-modal').style.display = 'none';
 });
 
@@ -237,10 +271,12 @@ function updateLanguage() {
 
     for (let id in elements) {
         const element = document.getElementById(id);
-        if (element.tagName === 'INPUT') {
-            element.placeholder = elements[id][language];
-        } else {
-            element.textContent = elements[id][language];
+        if (element) {
+            if (element.tagName === 'INPUT') {
+                element.placeholder = elements[id][language];
+            } else {
+                element.textContent = elements[id][language];
+            }
         }
     }
 }
@@ -257,11 +293,8 @@ function getReadmeContent() {
                 <li>The upcoming departures will display below.</li>
                 <li>Click on a bus or tram to see detailed timings.</li>
             </ol>
-            <h3>Kiosk Mode</h3>
-            <p>Activate kiosk mode by adding stops and bus/tram numbers as URL parameters, including <code>?kiosk=true</code> in the URL.</p>
-            <p><strong>Example:</strong> <code>?stop=Stop1&numbers=Bus1,Bus2&stop2=Stop2&numbers2=Bus3,Bus4&kiosk=true</code></p>
-            <p>In kiosk mode, the display cycles through the configured stops automatically.</p>
-            <p><strong>Exit Kiosk Mode:</strong> Press <strong>Shift + K</strong> on your keyboard.</p>
+            <h3>Dark Mode</h3>
+            <p>Click the sun/moon icon to toggle between light and dark modes.</p>
             <h3>Language Toggle</h3>
             <p>Use the language toggle at the top to switch between English and French.</p>
             <h3>Enjoy your journey!</h3>
@@ -277,11 +310,8 @@ function getReadmeContent() {
                 <li>Les prochains départs s'afficheront ci-dessous.</li>
                 <li>Cliquez sur un bus ou un tram pour voir les horaires détaillés.</li>
             </ol>
-            <h3>Mode Kiosque</h3>
-            <p>Activez le mode kiosque en ajoutant des arrêts et des numéros de bus/tram en tant que paramètres d'URL, en incluant <code>?kiosk=true</code> dans l'URL.</p>
-            <p><strong>Exemple :</strong> <code>?stop=Arret1&numbers=Bus1,Bus2&stop2=Arret2&numbers2=Bus3,Bus4&kiosk=true</code></p>
-            <p>En mode kiosque, l'affichage défile automatiquement à travers les arrêts configurés.</p>
-            <p><strong>Quitter le mode kiosque :</strong> Appuyez sur <strong>Maj + K</strong> sur votre clavier.</p>
+            <h3>Mode Sombre</h3>
+            <p>Cliquez sur l'icône soleil/lune pour basculer entre les modes clair et sombre.</p>
             <h3>Bascule de langue</h3>
             <p>Utilisez la bascule de langue en haut pour passer de l'anglais au français.</p>
             <h3>Bonne route !</h3>
@@ -298,6 +328,26 @@ async function fetchAndDisplayBusInfo() {
     if (!stopName) {
         displayMessage(language === 'en' ? 'Please enter a stop name.' : 'Veuillez entrer un nom d\'arrêt.');
         return;
+    }
+
+    if (!userSelectedStop) {
+        try {
+            const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}&type=station`);
+            const locationData = await locationResponse.json();
+            
+            if (!locationData.stations || locationData.stations.length === 0) {
+                displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
+                return;
+            }
+
+            const exactMatch = locationData.stations.find(s => s.name.toLowerCase() === stopName.toLowerCase());
+            if (!exactMatch) {
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking stop name:', error);
+            return;
+        }
     }
 
     if (!userSelectedStop) {
@@ -459,10 +509,73 @@ function displayBusInfo(buses) {
     });
 }
 
+function displayBusesKioskMode(buses) {
+    const busInfoContainer = document.getElementById('bus-info');
+    busInfoContainer.innerHTML = '';
+
+    const gridContainer = document.createElement('div');
+    gridContainer.classList.add('grid-container');
+
+    const busGroups = {};
+
+    buses.forEach(bus => {
+        const key = `${bus.vehicleType} ${bus.busNumber}`;
+        if (!busGroups[key]) {
+            busGroups[key] = {};
+        }
+        if (!busGroups[key][bus.to]) {
+            busGroups[key][bus.to] = [];
+        }
+        busGroups[key][bus.to].push(bus);
+    });
+
+    Object.entries(busGroups).forEach(([busKey, directions]) => {
+        const bigBox = document.createElement('div');
+        bigBox.classList.add('big-box');
+
+        const busInfo = document.createElement('div');
+        busInfo.classList.add('bus-info');
+        busInfo.textContent = busKey;
+        bigBox.appendChild(busInfo);
+
+        Object.entries(directions).forEach(([direction, busList]) => {
+            const directionHeader = document.createElement('div');
+            directionHeader.classList.add('direction-header');
+            directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
+            bigBox.appendChild(directionHeader);
+
+            const timeGrid = document.createElement('div');
+            timeGrid.classList.add('time-grid');
+
+            busList.sort((a, b) => a.departure.diff(b.departure))
+                .slice(0, 3)
+                .forEach(bus => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.textContent = `${bus.minutesUntilDeparture} min`;
+                    timeGrid.appendChild(cell);
+                });
+
+            bigBox.appendChild(timeGrid);
+        });
+
+        gridContainer.appendChild(bigBox);
+    });
+
+    busInfoContainer.appendChild(gridContainer);
+}
+
 function displayModal(busDetails) {
     const modal = document.getElementById('popup-modal');
     const modalBody = document.getElementById('modal-body');
     modalBody.innerHTML = '';
+    
+    const title = document.createElement('h2');
+    title.textContent = `${busDetails[0].vehicleType} ${busDetails[0].busNumber}`;
+    title.style.color = 'var(--primary-color)';
+    title.style.marginBottom = '20px';
+    modalBody.appendChild(title);
+    
     const groupedByDirection = busDetails.reduce((acc, bus) => {
         if (!acc[bus.to]) {
             acc[bus.to] = [];
@@ -470,28 +583,36 @@ function displayModal(busDetails) {
         acc[bus.to].push(bus.minutesUntilDeparture);
         return acc;
     }, {});
+    
     const directionsContainer = document.createElement('div');
     directionsContainer.classList.add('directions-container');
+    
     Object.keys(groupedByDirection).forEach(direction => {
         const directionColumn = document.createElement('div');
         directionColumn.classList.add('direction-column');
+        
         const directionHeader = document.createElement('h3');
         directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
         directionColumn.appendChild(directionHeader);
+        
         const busList = document.createElement('ul');
         busList.classList.add('bus-list');
+        
         const times = groupedByDirection[direction]
             .sort((a, b) => a - b)
             .slice(0, 10);
+            
         times.forEach(minutes => {
             const busItem = document.createElement('li');
             busItem.classList.add('bus-item');
             busItem.textContent = `${minutes} min`;
             busList.appendChild(busItem);
         });
+        
         directionColumn.appendChild(busList);
         directionsContainer.appendChild(directionColumn);
     });
+    
     modalBody.appendChild(directionsContainer);
     modal.style.display = 'block';
 }
@@ -505,20 +626,49 @@ function displayMessage(message) {
 }
 
 document.querySelector('.close').addEventListener('click', () => {
-    document.getElementById('popup-modal').style.display = 'none';
+    const modal = document.getElementById('popup-modal');
+    modal.style.display = 'none';
 });
 
-document.querySelector('.close-readme').addEventListener('click', function() {
+document.addEventListener('click', (event) => {
+    const modal = document.getElementById('popup-modal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('popup-modal');
+        modal.style.display = 'none';
+    }
+});
+
+document.querySelector('.close-readme').addEventListener('click', () => {
     document.getElementById('readme-modal').style.display = 'none';
 });
 
 window.addEventListener('popstate', autofillStopNameFromURL);
 
-autofillStopNameFromURL();
-updateLanguage();
+document.addEventListener('DOMContentLoaded', () => {
+    updateDarkMode();
+    autofillStopNameFromURL();
+    updateLanguage();
 
-if (kioskMode) {
-    setInterval(fetchAndDisplayCurrentStop, 10000);
-} else {
-    setInterval(fetchAndDisplayBusInfo, 10000);
-}
+    if (kioskMode) {
+        setInterval(fetchAndDisplayCurrentStop, 10000);
+    } else {
+        setInterval(fetchAndDisplayBusInfo, 10000);
+    }
+});
+
+document.addEventListener('click', function(event) {
+    const suggestionsDiv = document.getElementById('stop-suggestions');
+    const stopNameInput = document.getElementById('stop-name');
+    
+    if (!event.target.closest('#stop-suggestions') && !event.target.closest('#stop-name')) {
+        suggestionsDiv.innerHTML = '';
+    }
+});
+
+document.getElementById('theme-toggle').addEventListener('click', toggleDarkMode);
