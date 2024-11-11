@@ -3,6 +3,8 @@ let kioskMode = false;
 let stops = [];
 let currentStopIndex = 0;
 let kioskInterval;
+let countdownInterval;
+let refreshCountdown;
 let language = 'en';
 let suggestedStops = [];
 let userSelectedStop = false;
@@ -71,7 +73,7 @@ async function suggestStops(query) {
                 .slice(0, 5);
 
             matchedStops.forEach(station => {
-                    const suggestion = document.createElement('div');
+                const suggestion = document.createElement('div');
                 suggestion.classList.add('stop-suggestion');
                 suggestion.textContent = station.name;
                 suggestion.addEventListener('click', () => {
@@ -128,19 +130,29 @@ function autofillStopNameFromURL() {
     stops = [];
 
     if (kioskMode) {
-        let index = 1;
-        while (true) {
-            let stopParamName = index === 1 ? 'stop' : `stop${index}`;
-            let numbersParamName = index === 1 ? 'numbers' : `numbers${index}`;
-            if (!urlParams.has(stopParamName)) break;
-            const stopName = urlParams.get(stopParamName);
-            const busNumbersParam = urlParams.get(numbersParamName);
+        const stopName = urlParams.get('stop');
+        const busNumbersParam = urlParams.get('numbers');
+        if (stopName) {
             const vehicleNumbers = busNumbersParam ? busNumbersParam.split(',').map(num => num.trim()) : [];
             stops.push({
-                stopName,
+                stopName: decodeURIComponent(stopName),
                 vehicleNumbers
             });
-            index++;
+
+            let index = 2;
+            while (true) {
+                let stopParamName = `stop${index}`;
+                let numbersParamName = `numbers${index}`;
+                if (!urlParams.has(stopParamName)) break;
+                const nextStopName = urlParams.get(stopParamName);
+                const nextBusNumbersParam = urlParams.get(numbersParamName);
+                const nextVehicleNumbers = nextBusNumbersParam ? nextBusNumbersParam.split(',').map(num => num.trim()) : [];
+                stops.push({
+                    stopName: decodeURIComponent(nextStopName),
+                    vehicleNumbers: nextVehicleNumbers
+                });
+                index++;
+            }
         }
         if (stops.length > 0) {
             showKioskModeUI();
@@ -159,26 +171,102 @@ function autofillStopNameFromURL() {
         }
         showNormalModeUI();
         if (stopName) {
-            fetchAndDisplayBusInfo();
+            startNormalMode();
         }
     }
 }
 
 function startKioskMode() {
-    fetchAndDisplayCurrentStop();
     clearInterval(kioskInterval);
-    kioskInterval = setInterval(() => {
-        currentStopIndex = (currentStopIndex + 1) % stops.length;
-        fetchAndDisplayCurrentStop();
-    }, 15000);
+    clearInterval(countdownInterval);
+    
+    refreshCountdown = 10;
+    createRefreshIndicator(refreshCountdown);
+    
+    fetchAndDisplayCurrentStop().then(() => {
+        kioskInterval = setInterval(async () => {
+            try {
+                refreshCountdown = 0;
+                updateRefreshIndicator(0);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                if (stops.length > 1) {
+                    currentStopIndex = (currentStopIndex + 1) % stops.length;
+                    await fetchAndDisplayCurrentStop();
+                } else {
+                    await fetchAndDisplayBusInfo();
+                }
+                
+                refreshCountdown = 10;
+                setTimeout(() => {
+                    if (kioskMode) {
+                        updateRefreshIndicator(refreshCountdown);
+                    }
+                }, 300);
+            } catch (error) {
+                console.error('Error in kiosk refresh:', error);
+                refreshCountdown = 10;
+                updateRefreshIndicator(refreshCountdown);
+            }
+        }, 10000);
+
+        countdownInterval = setInterval(() => {
+            if (refreshCountdown > 0) {
+                refreshCountdown = Math.max(0, refreshCountdown - 1);
+                updateRefreshIndicator(refreshCountdown);
+            }
+        }, 1000);
+    }).catch(error => {
+        console.error('Error starting kiosk mode:', error);
+        refreshCountdown = 10;
+        updateRefreshIndicator(refreshCountdown);
+    });
 }
 
-function fetchAndDisplayCurrentStop() {
+function startNormalMode() {
+    clearInterval(kioskInterval);
+    clearInterval(countdownInterval);
+    removeRefreshIndicator();
+    
+    fetchAndDisplayBusInfo().then(() => {
+        kioskInterval = setInterval(() => {
+            fetchAndDisplayBusInfo().catch(error => {
+                console.error('Error in normal refresh:', error);
+            });
+        }, 20000);
+    });
+}
+
+async function fetchAndDisplayCurrentStop() {
     const stop = stops[currentStopIndex];
     if (stop) {
+        const header = document.getElementById('stop-name-header');
+        const busInfo = document.getElementById('bus-info');
+        
+        if (header) header.classList.add('fade-out');
+        if (busInfo) busInfo.classList.add('fade-out');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         document.getElementById('stop-name').value = stop.stopName;
         document.getElementById('vehicle-numbers').value = stop.vehicleNumbers.join(', ');
-        fetchAndDisplayBusInfo();
+        document.getElementById('stop-name-header').textContent = (language === 'en' ? 'Stop: ' : 'Arrêt : ') + stop.stopName;
+        
+        await fetchAndDisplayBusInfo();
+        
+        if (header) {
+            header.classList.remove('fade-out');
+            header.classList.add('fade-in');
+        }
+        if (busInfo) {
+            busInfo.classList.remove('fade-out');
+            busInfo.classList.add('fade-in');
+        }
+        
+        setTimeout(() => {
+            if (header) header.classList.remove('fade-in');
+            if (busInfo) busInfo.classList.remove('fade-in');
+        }, 300);
     }
 }
 
@@ -186,12 +274,15 @@ function showKioskModeUI() {
     document.body.classList.add('kiosk-mode');
     document.querySelector('.container').classList.add('kiosk-mode');
     document.getElementById('bus-form').style.display = 'none';
+    document.getElementById('stop-name-header').style.display = 'block';
 }
 
 function showNormalModeUI() {
     document.body.classList.remove('kiosk-mode');
     document.querySelector('.container').classList.remove('kiosk-mode');
     document.getElementById('bus-form').style.display = 'flex';
+    document.getElementById('stop-name-header').style.display = 'none';
+    document.getElementById('stop-name-header').textContent = '';
 }
 
 function toggleDarkMode() {
@@ -211,22 +302,93 @@ function updateDarkMode() {
     document.getElementById('theme-toggle').textContent = darkMode ? '🌙' : '☀️';
 }
 
-
-
 function exitKioskMode() {
     kioskMode = false;
+    const stopName = document.getElementById('stop-name').value.trim();
+    const vehicleNumbers = document.getElementById('vehicle-numbers').value.trim();
+    
+    const newUrl = new URL(window.location);
+    newUrl.search = '';
+    
+    if (stopName) {
+        newUrl.searchParams.set('stop', stopName);
+        if (vehicleNumbers) {
+            newUrl.searchParams.set('numbers', vehicleNumbers);
+        }
+    }
+    
+    window.history.pushState({}, '', newUrl);
     stops = [];
     currentStopIndex = 0;
     clearInterval(kioskInterval);
-    updateURLParams();
+    clearInterval(countdownInterval);
+    removeRefreshIndicator();
     showNormalModeUI();
-    fetchAndDisplayBusInfo();
+    startNormalMode();
+}
+
+function createRefreshIndicator(seconds) {
+    removeRefreshIndicator();
+    const indicator = document.createElement('div');
+    indicator.classList.add('refresh-indicator');
+    indicator.id = 'refresh-indicator';
+    document.body.appendChild(indicator);
+    
+    // Force reflow to ensure animation works
+    indicator.offsetHeight;
+    
+    updateRefreshIndicator(seconds);
+}
+
+function updateRefreshIndicator(seconds) {
+    const indicator = document.getElementById('refresh-indicator');
+    if (indicator) {
+        if (seconds === 0) {
+            indicator.classList.add('fade');
+            indicator.textContent = language === 'en' ? 'Refreshing...' : 'Actualisation...';
+        } else {
+            indicator.classList.toggle('fade', seconds <= 3);
+            indicator.textContent = `${language === 'en' ? 'Refreshing in' : 'Actualisation dans'} ${seconds}s`;
+        }
+    }
+}
+
+function removeRefreshIndicator() {
+    const existingIndicator = document.getElementById('refresh-indicator');
+    if (existingIndicator) {
+        existingIndicator.classList.add('fade');
+        setTimeout(() => {
+            if (existingIndicator.parentNode) {
+                existingIndicator.remove();
+            }
+        }, 300);
+    }
 }
 
 document.addEventListener('keydown', function(event) {
     if (event.shiftKey && event.key.toLowerCase() === 'k') {
         if (kioskMode) {
             exitKioskMode();
+        } else {
+            const stopName = document.getElementById('stop-name').value.trim();
+            const vehicleNumbers = document.getElementById('vehicle-numbers').value.trim();
+            if (stopName) {
+                const newUrl = new URL(window.location);
+                newUrl.search = '';
+                newUrl.searchParams.set('stop', stopName);
+                if (vehicleNumbers) {
+                    newUrl.searchParams.set('numbers', vehicleNumbers);
+                }
+                newUrl.searchParams.set('kiosk', 'true');
+                window.history.pushState({}, '', newUrl);
+                stops = [{
+                    stopName,
+                    vehicleNumbers: vehicleNumbers ? vehicleNumbers.split(',').map(num => num.trim()) : []
+                }];
+                kioskMode = true;
+                showKioskModeUI();
+                startKioskMode();
+            }
         }
     }
 });
@@ -284,37 +446,123 @@ function updateLanguage() {
 function getReadmeContent() {
     if (language === 'en') {
         return `
-            <h2>Welcome to the TPG Bus and Tram Timings Application</h2>
-            <p>This application provides real-time bus and tram schedules from TPG (Geneva Public Transport).</p>
-            <h3>How to Use</h3>
-            <ol>
-                <li><strong>Enter the stop name</strong> in the input field.</li>
-                <li><strong>Optional:</strong> Enter specific bus or tram numbers separated by commas.</li>
-                <li>The upcoming departures will display below.</li>
-                <li>Click on a bus or tram to see detailed timings.</li>
-            </ol>
-            <h3>Dark Mode</h3>
-            <p>Click the sun/moon icon to toggle between light and dark modes.</p>
-            <h3>Language Toggle</h3>
-            <p>Use the language toggle at the top to switch between English and French.</p>
-            <h3>Enjoy your journey!</h3>
+            <div class="readme-body">
+                <h2>TPG Bus and Tram Timings</h2>
+                <p>Get real-time schedules for Geneva's public transport system (TPG) with an easy-to-use interface.</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔍 Smart Search</h4>
+                        <p>Type any stop name and get instant suggestions with our intelligent autocomplete.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌓 Dark Mode</h4>
+                        <p>Easy on your eyes with automatic theme persistence and smooth transitions.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌍 Bilingual</h4>
+                        <p>Switch seamlessly between English and French interfaces.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🚌 Real-time Updates</h4>
+                        <p>Departure times update automatically every 10 seconds.</p>
+                    </div>
+                </div>
+
+                <h3>Quick Start Guide</h3>
+                <ol>
+                    <li><strong>Find Your Stop:</strong> Start typing the stop name in the search box - suggestions will appear automatically.</li>
+                    <li><strong>Filter Routes (Optional):</strong> Enter specific bus/tram numbers separated by commas (e.g., "12, 18").</li>
+                    <li><strong>View Departures:</strong> Click on any bus/tram number to see detailed departure times for all directions.</li>
+                </ol>
+
+                <h3>Pro Tips</h3>
+                <ul>
+                    <li><strong>Quick Theme Switch:</strong> Click the sun/moon icon to toggle between light and dark modes.</li>
+                    <li><strong>Language Toggle:</strong> Use the switch in the top-right corner to change between EN/FR.</li>
+                    <li><strong>Modal Navigation:</strong> Press <span class="shortcut-key">ESC</span> or click outside to close any modal window.</li>
+                    <li><strong>Multiple Routes:</strong> Enter multiple bus numbers like "12, 18" to filter specific routes.</li>
+                </ul>
+
+                <h3>URL Parameters</h3>
+                <p>You can use URL parameters to pre-configure the application:</p>
+                <ul>
+                    <li><strong>Single Stop:</strong></li>
+                    <li><span class="shortcut-key">?stop={Stop Name}&numbers={Bus/Tram Numbers}</span></li>
+                    <li>Example: <span class="shortcut-key">?stop=Gare Cornavin&numbers=12,17,18</span></li>
+                </ul>
+                <p>For kiosk mode with multiple stops:</p>
+                <ul>
+                    <li>Format:</li>
+                    <li><span class="shortcut-key">?stop={Stop1}&numbers={Bus/Tram Numbers}&stop2={Stop2}&numbers2={Bus/Tram Numbers}&kiosk=true</span></li>
+                    <li>Example:</li>
+                    <li><span class="shortcut-key">?stop=Gare Cornavin&numbers=10,18&stop2=Bel-Air&numbers2=14,17&kiosk=true</span></li>
+                    <li>Exit kiosk mode: Press <span class="shortcut-key">Shift + K</span></li>
+                </ul>
+
+                <h3>About TPG Data</h3>
+                <p>All transport data is provided in real-time by the TPG (Transports publics genevois) API. Times are shown in minutes until departure and automatically update.</p>
+            </div>
         `;
     } else {
         return `
-            <h2>Bienvenue sur l'application des horaires des bus et trams TPG</h2>
-            <p>Cette application fournit les horaires en temps réel des bus et trams des TPG (Transports publics genevois).</p>
-            <h3>Comment utiliser</h3>
-            <ol>
-                <li><strong>Entrez le nom de l'arrêt</strong> dans le champ de saisie.</li>
-                <li><strong>Facultatif :</strong> Entrez les numéros spécifiques de bus ou tram séparés par des virgules.</li>
-                <li>Les prochains départs s'afficheront ci-dessous.</li>
-                <li>Cliquez sur un bus ou un tram pour voir les horaires détaillés.</li>
-            </ol>
-            <h3>Mode Sombre</h3>
-            <p>Cliquez sur l'icône soleil/lune pour basculer entre les modes clair et sombre.</p>
-            <h3>Bascule de langue</h3>
-            <p>Utilisez la bascule de langue en haut pour passer de l'anglais au français.</p>
-            <h3>Bonne route !</h3>
+            <div class="readme-body">
+                <h2>Horaires des Bus et Trams TPG</h2>
+                <p>Obtenez les horaires en temps réel du réseau de transport public genevois (TPG) avec une interface simple d'utilisation.</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔍 Recherche Intelligente</h4>
+                        <p>Tapez le nom d'un arrêt et obtenez des suggestions instantanées avec notre autocomplétion intelligente.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌓 Mode Sombre</h4>
+                        <p>Agréable pour les yeux avec persistance automatique du thème et transitions fluides.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🌍 Bilingue</h4>
+                        <p>Basculez facilement entre les interfaces en anglais et en français.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🚌 Mises à jour en temps réel</h4>
+                        <p>Les horaires de départ se mettent à jour automatiquement toutes les 10 secondes.</p>
+                    </div>
+                </div>
+
+                <h3>Guide de Démarrage Rapide</h3>
+                <ol>
+                    <li><strong>Trouvez Votre Arrêt :</strong> Commencez à taper le nom de l'arrêt dans la barre de recherche - les suggestions apparaîtront automatiquement.</li>
+                    <li><strong>Filtrez les Lignes (Optionnel) :</strong> Entrez les numéros de bus/tram spécifiques séparés par des virgules (ex: "12, 18").</li>
+                    <li><strong>Voir les Départs :</strong> Cliquez sur n'importe quel numéro de bus/tram pour voir les horaires détaillés pour toutes les directions.</li>
+                </ol>
+
+                <h3>Astuces Pro</h3>
+                <ul>
+                    <li><strong>Changement de Thème :</strong> Cliquez sur l'icône soleil/lune pour basculer entre les modes clair et sombre.</li>
+                    <li><strong>Changement de Langue :</strong> Utilisez le commutateur en haut à droite pour changer entre EN/FR.</li>
+                    <li><strong>Navigation :</strong> Appuyez sur <span class="shortcut-key">ESC</span> ou cliquez à l'extérieur pour fermer toute fenêtre.</li>
+                    <li><strong>Lignes Multiples :</strong> Entrez plusieurs numéros de bus comme "12, 18" pour filtrer des lignes spécifiques.</li>
+                </ul>
+
+                <h3>Paramètres URL</h3>
+                <p>Vous pouvez utiliser des paramètres URL pour préconfigurer l'application :</p>
+                <ul>
+                    <li><strong>Arrêt Unique :</strong></li>
+                    <li><span class="shortcut-key">?stop={Nom de l'arrêt}&numbers={Numéros Bus/Tram}</span></li>
+                    <li>Exemple : <span class="shortcut-key">?stop=Gare Cornavin&numbers=12,14,17</span></li>
+                </ul>
+                <p>Pour le mode kiosque avec plusieurs arrêts :</p>
+                <ul>
+                    <li>Format :</li>
+                    <li><span class="shortcut-key">?stop={Arrêt1}&numbers={Numéros Bus/Tram}&stop2={Arrêt2}&numbers2={Numéros Bus/Tram}&kiosk=true</span></li>
+                    <li>Exemple :</li>
+                    <li><span class="shortcut-key">?stop=Gare Cornavin&numbers=10,18&stop2=Bel-Air&numbers2=14,17&kiosk=true</span></li>
+                    <li>Quitter le mode kiosque : Appuyez sur <span class="shortcut-key">Shift + K</span></li>
+                </ul>
+
+                <h3>À Propos des Données TPG</h3>
+                <p>Toutes les données de transport sont fournies en temps réel par l'API TPG (Transports publics genevois). Les temps sont affichés en minutes jusqu'au départ et se mettent à jour automatiquement.</p>
+            </div>
         `;
     }
 }
@@ -328,46 +576,6 @@ async function fetchAndDisplayBusInfo() {
     if (!stopName) {
         displayMessage(language === 'en' ? 'Please enter a stop name.' : 'Veuillez entrer un nom d\'arrêt.');
         return;
-    }
-
-    if (!userSelectedStop) {
-        try {
-            const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}&type=station`);
-            const locationData = await locationResponse.json();
-            
-            if (!locationData.stations || locationData.stations.length === 0) {
-                displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
-                return;
-            }
-
-            const exactMatch = locationData.stations.find(s => s.name.toLowerCase() === stopName.toLowerCase());
-            if (!exactMatch) {
-                return;
-            }
-        } catch (error) {
-            console.error('Error checking stop name:', error);
-            return;
-        }
-    }
-
-    if (!userSelectedStop) {
-        try {
-            const locationResponse = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(stopName)}&type=station`);
-            const locationData = await locationResponse.json();
-            
-            if (!locationData.stations || locationData.stations.length === 0) {
-                displayMessage(language === 'en' ? `No buses or trams departing from "${stopName}" were found.` : `Aucun bus ou tram au départ de "${stopName}" n'a été trouvé.`);
-                return;
-            }
-
-            const exactMatch = locationData.stations.find(s => s.name.toLowerCase() === stopName.toLowerCase());
-            if (!exactMatch) {
-                return;
-            }
-        } catch (error) {
-            console.error('Error checking stop name:', error);
-            return;
-        }
     }
 
     try {
@@ -417,7 +625,6 @@ async function fetchAndDisplayBusInfo() {
                 document.getElementById('stop-name-header').textContent = (language === 'en' ? 'Stop: ' : 'Arrêt : ') + stopName;
                 displayBusesKioskMode(buses);
             } else {
-                document.getElementById('stop-name-header').textContent = '';
                 displayBusInfo(buses);
             }
         }
@@ -429,13 +636,13 @@ async function fetchAndDisplayBusInfo() {
 
 function displayBusesKioskMode(buses) {
     const busInfoContainer = document.getElementById('bus-info');
+    if (!busInfoContainer) return;
+    
     busInfoContainer.innerHTML = '';
-
     const gridContainer = document.createElement('div');
     gridContainer.classList.add('grid-container');
 
     const busGroups = {};
-
     buses.forEach(bus => {
         const key = `${bus.vehicleType} ${bus.busNumber}`;
         if (!busGroups[key]) {
@@ -447,7 +654,7 @@ function displayBusesKioskMode(buses) {
         busGroups[key][bus.to].push(bus);
     });
 
-    Object.entries(busGroups).forEach(([busKey, directions]) => {
+    Object.entries(busGroups).sort().forEach(([busKey, directions]) => {
         const bigBox = document.createElement('div');
         bigBox.classList.add('big-box');
 
@@ -456,7 +663,7 @@ function displayBusesKioskMode(buses) {
         busInfo.textContent = busKey;
         bigBox.appendChild(busInfo);
 
-        Object.entries(directions).forEach(([direction, busList]) => {
+        Object.entries(directions).sort().forEach(([direction, busList]) => {
             const directionHeader = document.createElement('div');
             directionHeader.classList.add('direction-header');
             directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
@@ -465,7 +672,8 @@ function displayBusesKioskMode(buses) {
             const timeGrid = document.createElement('div');
             timeGrid.classList.add('time-grid');
 
-            busList.sort((a, b) => a.departure.diff(b.departure))
+            busList
+                .sort((a, b) => a.minutesUntilDeparture - b.minutesUntilDeparture)
                 .slice(0, 3)
                 .forEach(bus => {
                     const cell = document.createElement('div');
@@ -485,10 +693,6 @@ function displayBusesKioskMode(buses) {
 
 function displayBusInfo(buses) {
     const busInfoContainer = document.getElementById('bus-info');
-    if (!busInfoContainer) {
-        console.error('Bus info container element not found!');
-        return;
-    }
     busInfoContainer.innerHTML = '';
     const groupedBuses = buses.reduce((acc, bus) => {
         const key = `${bus.vehicleType} ${bus.busNumber}`;
@@ -507,62 +711,6 @@ function displayBusInfo(buses) {
         });
         busInfoContainer.appendChild(busElement);
     });
-}
-
-function displayBusesKioskMode(buses) {
-    const busInfoContainer = document.getElementById('bus-info');
-    busInfoContainer.innerHTML = '';
-
-    const gridContainer = document.createElement('div');
-    gridContainer.classList.add('grid-container');
-
-    const busGroups = {};
-
-    buses.forEach(bus => {
-        const key = `${bus.vehicleType} ${bus.busNumber}`;
-        if (!busGroups[key]) {
-            busGroups[key] = {};
-        }
-        if (!busGroups[key][bus.to]) {
-            busGroups[key][bus.to] = [];
-        }
-        busGroups[key][bus.to].push(bus);
-    });
-
-    Object.entries(busGroups).forEach(([busKey, directions]) => {
-        const bigBox = document.createElement('div');
-        bigBox.classList.add('big-box');
-
-        const busInfo = document.createElement('div');
-        busInfo.classList.add('bus-info');
-        busInfo.textContent = busKey;
-        bigBox.appendChild(busInfo);
-
-        Object.entries(directions).forEach(([direction, busList]) => {
-            const directionHeader = document.createElement('div');
-            directionHeader.classList.add('direction-header');
-            directionHeader.textContent = (language === 'en' ? 'To: ' : 'Vers : ') + direction;
-            bigBox.appendChild(directionHeader);
-
-            const timeGrid = document.createElement('div');
-            timeGrid.classList.add('time-grid');
-
-            busList.sort((a, b) => a.departure.diff(b.departure))
-                .slice(0, 3)
-                .forEach(bus => {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    cell.textContent = `${bus.minutesUntilDeparture} min`;
-                    timeGrid.appendChild(cell);
-                });
-
-            bigBox.appendChild(timeGrid);
-        });
-
-        gridContainer.appendChild(bigBox);
-    });
-
-    busInfoContainer.appendChild(gridContainer);
 }
 
 function displayModal(busDetails) {
@@ -648,17 +796,40 @@ document.querySelector('.close-readme').addEventListener('click', () => {
     document.getElementById('readme-modal').style.display = 'none';
 });
 
-window.addEventListener('popstate', autofillStopNameFromURL);
+window.addEventListener('popstate', () => {
+    clearInterval(kioskInterval);
+    clearInterval(countdownInterval);
+    removeRefreshIndicator();
+    setTimeout(autofillStopNameFromURL, 300);
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     updateDarkMode();
     autofillStopNameFromURL();
     updateLanguage();
+});
 
-    if (kioskMode) {
-        setInterval(fetchAndDisplayCurrentStop, 10000);
+window.addEventListener('beforeunload', () => {
+    clearInterval(kioskInterval);
+    clearInterval(countdownInterval);
+    removeRefreshIndicator();
+});
+
+window.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        clearInterval(kioskInterval);
+        clearInterval(countdownInterval);
+        removeRefreshIndicator();
     } else {
-        setInterval(fetchAndDisplayBusInfo, 10000);
+        setTimeout(() => {
+            if (kioskMode) {
+                refreshCountdown = 10;
+                createRefreshIndicator(refreshCountdown);
+                startKioskMode();
+            } else if (document.getElementById('stop-name').value.trim()) {
+                startNormalMode();
+            }
+        }, 300);
     }
 });
 
